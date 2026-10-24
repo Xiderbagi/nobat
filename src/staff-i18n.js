@@ -1,0 +1,145 @@
+// Text for the staff screens (reception, patient files, settings).
+// A key can have a version per business type: "provider_salon" is used instead of "provider" for salons.
+// The Kurdish and Arabic text needs a review by a native speaker before launch.
+export const STAFF_LANGS = ['ckb', 'ar', 'en'];
+
+const S = {
+  en: {
+    doesServices: 'Services this person does', doesServicesHint: 'Leave all unticked if they do everything. "Anyone free" bookings only go to people who do the chosen services.',
+    badPhone: 'That mobile number is not valid. Use the format 0750 123 4567.', st_cancelled: 'Cancelled',
+    langName: 'English',
+    today: 'Today', messages: 'Messages', settings: 'Settings', patients: 'Patients', patients_salon: 'Customers', signOut: 'Sign out',
+    errGeneric: 'Something went wrong. Try again.', signInAgain: 'Sign in again.', saved: 'Saved.', save: 'Save', cancel: 'Cancel',
+    signInTitle: 'Staff sign in', email: 'Email', password: 'Password', signIn: 'Sign in', wrongLogin: 'Wrong email or password.',
+    notLive: 'Messages are not being sent yet: WhatsApp and SMS are not set up. They are saved under Messages.',
+    provider: 'Doctor', provider_salon: 'Staff member', providers: 'Doctors', providers_salon: 'Staff', day: 'Day', bookingPage: 'Booking page', poster: 'QR poster',
+    queue: 'Queue', queue_salon: "Today's bookings", colNo: '#', colPatient: 'Patient', colPatient_salon: 'Customer', colTime: 'Time', colStatus: 'Status', colServices: 'Services',
+    kBooked: 'Booked', kWaiting: 'Waiting', kSeen: 'Seen', kSeen_salon: 'Done', kNoShow: 'No-shows',
+    st_booked: 'Booked', st_arrived: 'Arrived', st_in_room: 'In room', st_in_room_salon: 'In chair', st_done: 'Seen', st_done_salon: 'Done', st_no_show: 'No-show',
+    aArrived: 'Arrived', aNoShow: 'No-show', aBack: 'Came back', aStart: 'Start', aDone: 'Done', walkin: 'Walk-in',
+    inRoom: 'In the room now', nobodyYet: 'Nobody yet.', callNext: 'Call next patient (#{n})', finishLast: 'Finish this patient', noneWaiting: 'No one waiting',
+    nearHint: 'Calling the next patient also messages the person 2 places behind, so they leave home on time.',
+    called: 'Called #{n} {name}.', lastDone: 'The last patient is finished.', addWalkin: 'Add walk-in', name: 'Name', mobile: 'Mobile', mobileOpt: 'Mobile (optional, for messages)',
+    addToQueue: 'Add to queue', addedAs: 'Added as number {n}.', noneBooked: 'No one is booked for this day yet.',
+    addProviderFirst: 'Add a doctor under Settings first.', addProviderFirst_salon: 'Add staff and services under Settings first.', openFile: 'Open file',
+    addBooking: 'Add a booking (phone, Instagram or walk-in)', services: 'Services', time: 'Time', anyone: 'Anyone free', addBookingBtn: 'Add booking', bookingAdded: 'Booking added for {time}.',
+    needService: 'Choose at least one service.', slotBusy: 'That person is busy at that time. Choose another time or person.', notWorking: 'Nobody works at that time.',
+    messagesIntro: 'The last 200 messages sent. Login codes are hidden.', mWhen: 'When (UTC)', mTo: 'To', mType: 'Type', mChannel: 'Channel', mStatus: 'Status', mBody: 'Message', noMessages: 'No messages yet.',
+    clinicSection: 'Clinic', clinicSection_salon: 'Salon', cName: 'Name', cCity: 'City', cAddress: 'Address', cPhone: 'Phone',
+    bookHere: 'Customers book here:', qrHint: 'Print the QR poster for the waiting room, and add this link to Instagram and Google Maps.',
+    addProvider: 'Add a doctor', addProvider_salon: 'Add a staff member', specialty: 'Specialty', specialty_salon: 'Role', specialtyPh: "Children's doctor", specialtyPh_salon: 'Hair, color',
+    fee: 'Visit fee (IQD)', howBook: 'How patients book', modeQueue: 'Queue number', modeTime: 'Fixed times', slotMin: 'Minutes per time slot', slotHint: 'Only used for fixed times.',
+    avgMin: 'Average minutes per patient', avgHint: 'Used to tell patients how long they will wait.', dailyLimit: 'Most bookings per day',
+    workDay: 'Working day', from: 'From', to: 'To', taking: 'Taking bookings', add: 'Add', needProviderName: "Enter the name.", badHours: 'Each working day needs a start time before its end time.',
+    staffAccounts: 'Staff accounts', role: 'Role', roleOwner: 'Owner', roleReception: 'Reception', roleDoctor: 'Doctor', roleDoctor_salon: 'Staff member',
+    addAccount: 'Add an account', passwordHint: 'At least 8 characters.', accountAdded: 'Account added. Give them the email and password.', linked: 'Which doctor', linked_salon: 'Which staff member', none: 'None',
+    needAccount: 'Enter a name and a valid email.', shortPassword: 'The password needs at least 8 characters.', emailTaken: 'Someone already uses that email.',
+    servicesTitle: 'Services', sName: 'Service', sPrice: 'Price (IQD)', sMinutes: 'Minutes', sRebook: 'Remind to book again after (weeks)', sRebookHint: '0 = no reminder', sActive: 'Offered', addService: 'Add service',
+    needServiceName: 'Enter the service name.',
+    wd0: 'Sunday', wd1: 'Monday', wd2: 'Tuesday', wd3: 'Wednesday', wd4: 'Thursday', wd5: 'Friday', wd6: 'Saturday',
+    search: 'Search by name or mobile', birth: 'Year of birth', allergies: 'Allergies', generalNotes: 'Notes', lastVisit: 'Last visit', visits: 'Visits', noVisits: 'No visits yet.',
+    addNote: 'Add a note for this visit', notePh: 'What was found, what was prescribed, what to do next', saveNote: 'Save note', noteSaved: 'Note saved.',
+    followUp: 'Next follow-up', followUpHint: 'The patient gets a message the evening before, with the booking link.', saveDetails: 'Save details',
+    notesPrivate: 'Visit notes are only shown to the owner and doctors.', noPatients: 'No one found.', nVisits: '{n} visits', allPatients: '← All patients', allPatients_salon: '← All customers',
+    by: 'by', noteEmpty: 'Write the note first.', notAllowed: 'Only the owner and doctors can see visit notes.',
+    printPoster: 'Print', posterHelp: 'Print on A4 or A5 and put it in the waiting room, at reception and on the door.'
+  },
+  ckb: {
+    doesServices: 'ئەو خزمەتگوزارییانەی ئەم کەسە دەیکات', doesServicesHint: 'ئەگەر هەموو شتێک دەکات، هیچیان دیاری مەکە. نۆرەکانی «هەر کەسێکی بەتاڵ» تەنها دەچن بۆ ئەو کەسانەی خزمەتگوزارییە هەڵبژێردراوەکان دەکەن.',
+    badPhone: 'ئەو ژمارە مۆبایلە دروست نییە. بەم شێوەیە بینووسە: 0750 123 4567.', st_cancelled: 'هەڵوەشێندرایەوە',
+    langName: 'کوردی',
+    today: 'ئەمڕۆ', messages: 'نامەکان', settings: 'ڕێکخستنەکان', patients: 'نەخۆشەکان', patients_salon: 'کڕیارەکان', signOut: 'چوونەدەرەوە',
+    errGeneric: 'هەڵەیەک ڕوویدا. دووبارە هەوڵ بدەرەوە.', signInAgain: 'دووبارە بچۆ ژوورەوە.', saved: 'پاشەکەوت کرا.', save: 'پاشەکەوت', cancel: 'پاشگەزبوونەوە',
+    signInTitle: 'چوونەژوورەوەی کارمەندان', email: 'ئیمەیڵ', password: 'وشەی نهێنی', signIn: 'چوونەژوورەوە', wrongLogin: 'ئیمەیڵ یان وشەی نهێنی هەڵەیە.',
+    notLive: 'هێشتا نامە نانێردرێن: واتسئاپ و SMS ڕێک نەخراون. نامەکان لە بەشی نامەکان پاشەکەوت دەکرێن.',
+    provider: 'دکتۆر', provider_salon: 'کارمەند', providers: 'دکتۆرەکان', providers_salon: 'کارمەندان', day: 'ڕۆژ', bookingPage: 'پەڕەی نۆرەگرتن', poster: 'پۆستەری QR',
+    queue: 'نۆرە', queue_salon: 'نۆرەکانی ئەمڕۆ', colNo: '#', colPatient: 'نەخۆش', colPatient_salon: 'کڕیار', colTime: 'کات', colStatus: 'دۆخ', colServices: 'خزمەتگوزارییەکان',
+    kBooked: 'نۆرەگیراو', kWaiting: 'چاوەڕوان', kSeen: 'بینراو', kSeen_salon: 'تەواو', kNoShow: 'نەهاتوو',
+    st_booked: 'نۆرەگیراو', st_arrived: 'گەیشتووە', st_in_room: 'لە ژوورەوە', st_in_room_salon: 'لەسەر کورسی', st_done: 'بینرا', st_done_salon: 'تەواو', st_no_show: 'نەهات',
+    aArrived: 'گەیشت', aNoShow: 'نەهات', aBack: 'گەڕایەوە', aStart: 'دەستپێکردن', aDone: 'تەواو', walkin: 'بێ نۆرە',
+    inRoom: 'ئێستا لە ژوورەوە', nobodyYet: 'هێشتا کەس نییە.', callNext: 'بانگکردنی نەخۆشی داهاتوو (#{n})', finishLast: 'تەواوکردنی ئەم نەخۆشە', noneWaiting: 'کەس چاوەڕوان نییە',
+    nearHint: 'بانگکردنی نەخۆشی داهاتوو نامەیەکیش دەنێرێت بۆ ئەو کەسەی دوو نۆرە دواترە، تا بە کاتی خۆی بێت.',
+    called: '#{n} {name} بانگ کرا.', lastDone: 'دوایین نەخۆش تەواو بوو.', addWalkin: 'زیادکردنی بێ نۆرە', name: 'ناو', mobile: 'مۆبایل', mobileOpt: 'مۆبایل (ئارەزوومەندانە، بۆ نامە)',
+    addToQueue: 'زیادکردن بۆ نۆرە', addedAs: 'وەک ژمارە {n} زیاد کرا.', noneBooked: 'هێشتا کەس بۆ ئەم ڕۆژە نۆرەی نەگرتووە.',
+    addProviderFirst: 'سەرەتا لە ڕێکخستنەکان دکتۆرێک زیاد بکە.', addProviderFirst_salon: 'سەرەتا لە ڕێکخستنەکان کارمەند و خزمەتگوزاری زیاد بکە.', openFile: 'کردنەوەی فایل',
+    addBooking: 'زیادکردنی نۆرە (تەلەفۆن، ئینستاگرام یان بێ نۆرە)', services: 'خزمەتگوزارییەکان', time: 'کات', anyone: 'هەر کەسێکی بەتاڵ', addBookingBtn: 'زیادکردنی نۆرە', bookingAdded: 'نۆرە زیاد کرا بۆ {time}.',
+    needService: 'لانیکەم یەک خزمەتگوزاری هەڵبژێرە.', slotBusy: 'ئەو کەسە لەو کاتەدا سەرقاڵە. کات یان کەسێکی تر هەڵبژێرە.', notWorking: 'لەو کاتەدا کەس کار ناکات.',
+    messagesIntro: 'دوایین 200 نامەی نێردراو. کۆدەکانی چوونەژوورەوە شاردراونەتەوە.', mWhen: 'کات (UTC)', mTo: 'بۆ', mType: 'جۆر', mChannel: 'ڕێگا', mStatus: 'دۆخ', mBody: 'نامە', noMessages: 'هێشتا هیچ نامەیەک نییە.',
+    clinicSection: 'کلینیک', clinicSection_salon: 'ساڵۆن', cName: 'ناو', cCity: 'شار', cAddress: 'ناونیشان', cPhone: 'تەلەفۆن',
+    bookHere: 'کڕیاران لێرە نۆرە دەگرن:', qrHint: 'پۆستەری QR بۆ هۆڵی چاوەڕوانی چاپ بکە، و ئەم بەستەرە بخەرە ئینستاگرام و Google Maps.',
+    addProvider: 'زیادکردنی دکتۆر', addProvider_salon: 'زیادکردنی کارمەند', specialty: 'پسپۆڕی', specialty_salon: 'کار', specialtyPh: 'دکتۆری منداڵان', specialtyPh_salon: 'قژ، ڕەنگ',
+    fee: 'نرخی سەردان (دینار)', howBook: 'نەخۆش چۆن نۆرە دەگرێت', modeQueue: 'ژمارەی نۆرە', modeTime: 'کاتی دیاریکراو', slotMin: 'خولەک بۆ هەر کاتێک', slotHint: 'تەنها بۆ کاتی دیاریکراو.',
+    avgMin: 'تێکڕای خولەک بۆ هەر نەخۆشێک', avgHint: 'بۆ ئەوەی بە نەخۆش بڵێین چەند چاوەڕێ دەکات.', dailyLimit: 'زۆرترین نۆرە لە ڕۆژێکدا',
+    workDay: 'ڕۆژی کار', from: 'لە', to: 'تا', taking: 'نۆرە وەردەگرێت', add: 'زیادکردن', needProviderName: 'ناوەکە بنووسە.', badHours: 'هەر ڕۆژێکی کار دەبێت کاتی دەستپێکردنی پێش کاتی کۆتایی بێت.',
+    staffAccounts: 'هەژماری کارمەندان', role: 'ڕۆڵ', roleOwner: 'خاوەن', roleReception: 'پێشوازی', roleDoctor: 'دکتۆر', roleDoctor_salon: 'کارمەند',
+    addAccount: 'زیادکردنی هەژمار', passwordHint: 'لانیکەم 8 پیت.', accountAdded: 'هەژمار زیاد کرا. ئیمەیڵ و وشەی نهێنییەکەیان پێبدە.', linked: 'کام دکتۆر', linked_salon: 'کام کارمەند', none: 'هیچ',
+    needAccount: 'ناو و ئیمەیڵێکی دروست بنووسە.', shortPassword: 'وشەی نهێنی دەبێت لانیکەم 8 پیت بێت.', emailTaken: 'کەسێکی تر ئەو ئیمەیڵە بەکاردەهێنێت.',
+    servicesTitle: 'خزمەتگوزارییەکان', sName: 'خزمەتگوزاری', sPrice: 'نرخ (دینار)', sMinutes: 'خولەک', sRebook: 'بیرخستنەوە بۆ نۆرەی دووبارە دوای (هەفتە)', sRebookHint: '0 = بیرخستنەوە نییە', sActive: 'پێشکەش دەکرێت', addService: 'زیادکردنی خزمەتگوزاری',
+    needServiceName: 'ناوی خزمەتگوزارییەکە بنووسە.',
+    wd0: 'یەکشەممە', wd1: 'دووشەممە', wd2: 'سێشەممە', wd3: 'چوارشەممە', wd4: 'پێنجشەممە', wd5: 'هەینی', wd6: 'شەممە',
+    search: 'گەڕان بە ناو یان مۆبایل', birth: 'ساڵی لەدایکبوون', allergies: 'هەستیاری', generalNotes: 'تێبینی', lastVisit: 'دوایین سەردان', visits: 'سەردانەکان', noVisits: 'هێشتا هیچ سەردانێک نییە.',
+    addNote: 'تێبینییەک بۆ ئەم سەردانە زیاد بکە', notePh: 'چی دۆزرایەوە، چی نووسرا، هەنگاوی داهاتوو چییە', saveNote: 'پاشەکەوتکردنی تێبینی', noteSaved: 'تێبینی پاشەکەوت کرا.',
+    followUp: 'سەردانی بەدواداچوونی داهاتوو', followUpHint: 'نەخۆش ئێوارەی پێشتر نامەیەک وەردەگرێت لەگەڵ بەستەری نۆرەگرتن.', saveDetails: 'پاشەکەوتکردنی زانیاری',
+    notesPrivate: 'تێبینییەکانی سەردان تەنها بۆ خاوەن و دکتۆرەکان دەردەکەون.', noPatients: 'کەس نەدۆزرایەوە.', nVisits: '{n} سەردان', allPatients: '→ هەموو نەخۆشەکان', allPatients_salon: '→ هەموو کڕیارەکان',
+    by: 'لەلایەن', noteEmpty: 'سەرەتا تێبینییەکە بنووسە.', notAllowed: 'تەنها خاوەن و دکتۆرەکان دەتوانن تێبینییەکانی سەردان ببینن.',
+    printPoster: 'چاپکردن', posterHelp: 'لەسەر A4 یان A5 چاپی بکە و لە هۆڵی چاوەڕوانی، پێشوازی و دەرگا دایبنێ.'
+  },
+  ar: {
+    doesServices: 'الخدمات التي يقدمها هذا الشخص', doesServicesHint: 'اترك الكل بدون اختيار إذا كان يقدم كل شيء. حجوزات «أي شخص متاح» تذهب فقط لمن يقدم الخدمات المختارة.',
+    badPhone: 'رقم الموبايل غير صحيح. استخدم هذا الشكل: 0750 123 4567.', st_cancelled: 'ملغى',
+    langName: 'العربية',
+    today: 'اليوم', messages: 'الرسائل', settings: 'الإعدادات', patients: 'المرضى', patients_salon: 'الزبائن', signOut: 'تسجيل الخروج',
+    errGeneric: 'حدث خطأ. حاول مرة أخرى.', signInAgain: 'سجّل الدخول مرة أخرى.', saved: 'تم الحفظ.', save: 'حفظ', cancel: 'إلغاء',
+    signInTitle: 'دخول الموظفين', email: 'البريد الإلكتروني', password: 'كلمة السر', signIn: 'دخول', wrongLogin: 'البريد أو كلمة السر خاطئة.',
+    notLive: 'الرسائل لا تُرسل بعد: واتساب والرسائل القصيرة غير مفعّلة. تُحفظ الرسائل في قسم الرسائل.',
+    provider: 'الطبيب', provider_salon: 'الموظف', providers: 'الأطباء', providers_salon: 'الموظفون', day: 'اليوم', bookingPage: 'صفحة الحجز', poster: 'ملصق QR',
+    queue: 'الدور', queue_salon: 'حجوزات اليوم', colNo: '#', colPatient: 'المريض', colPatient_salon: 'الزبون', colTime: 'الوقت', colStatus: 'الحالة', colServices: 'الخدمات',
+    kBooked: 'محجوز', kWaiting: 'بالانتظار', kSeen: 'تمت المعاينة', kSeen_salon: 'منتهي', kNoShow: 'لم يحضر',
+    st_booked: 'محجوز', st_arrived: 'حضر', st_in_room: 'في الغرفة', st_in_room_salon: 'على الكرسي', st_done: 'تمت المعاينة', st_done_salon: 'منتهي', st_no_show: 'لم يحضر',
+    aArrived: 'حضر', aNoShow: 'لم يحضر', aBack: 'عاد', aStart: 'ابدأ', aDone: 'انتهى', walkin: 'بدون حجز',
+    inRoom: 'الآن في الغرفة', nobodyYet: 'لا أحد بعد.', callNext: 'نداء المريض التالي (#{n})', finishLast: 'إنهاء هذا المريض', noneWaiting: 'لا أحد بالانتظار',
+    nearHint: 'نداء المريض التالي يرسل أيضاً رسالة للشخص الذي بعده بدورين، ليخرج من البيت في الوقت المناسب.',
+    called: 'تم نداء #{n} {name}.', lastDone: 'انتهى آخر مريض.', addWalkin: 'إضافة بدون حجز', name: 'الاسم', mobile: 'الموبايل', mobileOpt: 'الموبايل (اختياري، للرسائل)',
+    addToQueue: 'إضافة للدور', addedAs: 'أضيف برقم {n}.', noneBooked: 'لا يوجد حجز لهذا اليوم بعد.',
+    addProviderFirst: 'أضف طبيباً من الإعدادات أولاً.', addProviderFirst_salon: 'أضف الموظفين والخدمات من الإعدادات أولاً.', openFile: 'فتح الملف',
+    addBooking: 'إضافة حجز (هاتف، انستغرام أو بدون حجز)', services: 'الخدمات', time: 'الوقت', anyone: 'أي شخص متاح', addBookingBtn: 'إضافة الحجز', bookingAdded: 'أضيف الحجز للساعة {time}.',
+    needService: 'اختر خدمة واحدة على الأقل.', slotBusy: 'هذا الشخص مشغول في هذا الوقت. اختر وقتاً أو شخصاً آخر.', notWorking: 'لا أحد يعمل في هذا الوقت.',
+    messagesIntro: 'آخر 200 رسالة مرسلة. رموز الدخول مخفية.', mWhen: 'الوقت (UTC)', mTo: 'إلى', mType: 'النوع', mChannel: 'الطريقة', mStatus: 'الحالة', mBody: 'الرسالة', noMessages: 'لا توجد رسائل بعد.',
+    clinicSection: 'العيادة', clinicSection_salon: 'الصالون', cName: 'الاسم', cCity: 'المدينة', cAddress: 'العنوان', cPhone: 'الهاتف',
+    bookHere: 'يحجز الزبائن هنا:', qrHint: 'اطبع ملصق QR لقاعة الانتظار، وأضف هذا الرابط إلى انستغرام وخرائط Google.',
+    addProvider: 'إضافة طبيب', addProvider_salon: 'إضافة موظف', specialty: 'الاختصاص', specialty_salon: 'العمل', specialtyPh: 'طبيب أطفال', specialtyPh_salon: 'شعر، صبغ',
+    fee: 'الكشفية (دينار)', howBook: 'طريقة حجز المرضى', modeQueue: 'رقم دور', modeTime: 'أوقات محددة', slotMin: 'دقائق لكل موعد', slotHint: 'للأوقات المحددة فقط.',
+    avgMin: 'متوسط الدقائق لكل مريض', avgHint: 'لإخبار المرضى بمدة الانتظار.', dailyLimit: 'أقصى عدد حجوزات في اليوم',
+    workDay: 'يوم العمل', from: 'من', to: 'إلى', taking: 'يستقبل الحجوزات', add: 'إضافة', needProviderName: 'أدخل الاسم.', badHours: 'كل يوم عمل يحتاج وقت بداية قبل وقت النهاية.',
+    staffAccounts: 'حسابات الموظفين', role: 'الدور', roleOwner: 'المالك', roleReception: 'الاستقبال', roleDoctor: 'طبيب', roleDoctor_salon: 'موظف',
+    addAccount: 'إضافة حساب', passwordHint: '8 أحرف على الأقل.', accountAdded: 'أضيف الحساب. أعطهم البريد وكلمة السر.', linked: 'أي طبيب', linked_salon: 'أي موظف', none: 'لا أحد',
+    needAccount: 'أدخل اسماً وبريداً صحيحاً.', shortPassword: 'كلمة السر تحتاج 8 أحرف على الأقل.', emailTaken: 'هذا البريد مستخدم من شخص آخر.',
+    servicesTitle: 'الخدمات', sName: 'الخدمة', sPrice: 'السعر (دينار)', sMinutes: 'الدقائق', sRebook: 'تذكير بالحجز مجدداً بعد (أسابيع)', sRebookHint: '0 = بدون تذكير', sActive: 'متوفرة', addService: 'إضافة خدمة',
+    needServiceName: 'أدخل اسم الخدمة.',
+    wd0: 'الأحد', wd1: 'الاثنين', wd2: 'الثلاثاء', wd3: 'الأربعاء', wd4: 'الخميس', wd5: 'الجمعة', wd6: 'السبت',
+    search: 'ابحث بالاسم أو الموبايل', birth: 'سنة الميلاد', allergies: 'الحساسية', generalNotes: 'ملاحظات', lastVisit: 'آخر زيارة', visits: 'الزيارات', noVisits: 'لا توجد زيارات بعد.',
+    addNote: 'أضف ملاحظة لهذه الزيارة', notePh: 'ماذا وُجد، ماذا وُصف، ما الخطوة التالية', saveNote: 'حفظ الملاحظة', noteSaved: 'تم حفظ الملاحظة.',
+    followUp: 'المراجعة القادمة', followUpHint: 'يستلم المريض رسالة في المساء السابق مع رابط الحجز.', saveDetails: 'حفظ المعلومات',
+    notesPrivate: 'ملاحظات الزيارات تظهر للمالك والأطباء فقط.', noPatients: 'لم يُعثر على أحد.', nVisits: '{n} زيارات', allPatients: '→ كل المرضى', allPatients_salon: '→ كل الزبائن',
+    by: 'بواسطة', noteEmpty: 'اكتب الملاحظة أولاً.', notAllowed: 'المالك والأطباء فقط يمكنهم رؤية ملاحظات الزيارات.',
+    printPoster: 'طباعة', posterHelp: 'اطبعه على A4 أو A5 وضعه في قاعة الانتظار والاستقبال وعلى الباب.'
+  }
+};
+
+export function pickStaffLang(v) {
+  return STAFF_LANGS.includes(v) ? v : 'ckb';
+}
+
+// Dictionary for one language and business type, with the type-specific words already chosen.
+export function staffDict(lang, kind = 'clinic') {
+  const out = { ...S.en, ...S[lang] };
+  const suffix = '_' + kind;
+  for (const key of Object.keys(out)) if (key.endsWith(suffix)) out[key.slice(0, -suffix.length)] = out[key];
+  return out;
+}
+
+export function st(dict, key, vars) {
+  let s = dict[key] ?? key;
+  if (vars) for (const [k, v] of Object.entries(vars)) s = s.split('{' + k + '}').join(String(v));
+  return s;
+}

@@ -5,6 +5,13 @@ export const RTL = new Set(['ckb', 'ar']);
 
 const T = {
   en: {
+    keepLink: 'Save this link to see or cancel your booking.',
+    chooseServices: 'Choose services', chooseStaff: 'Who should do it?', anyone: 'Anyone free', total: 'Total', minutes: 'min', chooseTime: 'Choose a time',
+    bookedTitle: 'You are booked', with: 'With', services: 'Services', noTimes: 'No free times on this day. Try another day or person.', needService: 'Choose at least one service.',
+    msgConfirmedSalon: '{clinic}: you are booked for {services} with {doctor} on {when}. See or cancel your booking: {link}',
+    msgReminderSalon: '{clinic}: reminder, see you tomorrow at {when} with {doctor} ({services}). {link}',
+    msgRebook: '{clinic}: it has been a while since your last visit. Book your next one here: {link}',
+    msgFollowUp: '{clinic}: your follow-up visit is due tomorrow. Book your time here: {link}',
     langName: 'English', bookWith: 'Book a visit', chooseDoctor: 'Choose a doctor', fee: 'Visit fee', iqd: 'IQD',
     byTime: 'Choose a time', byQueue: 'Take a queue number', today: 'Today', closed: 'Closed', noSlots: 'No free times on this day.',
     full: 'The queue for this day is full.', nextNumber: 'Your number will be', expected: 'Expected time', name: 'Your name', phone: 'Mobile number',
@@ -23,6 +30,13 @@ const T = {
     msgCode: 'Your Nobat code is {code}. It expires in 10 minutes.'
   },
   ckb: {
+    keepLink: 'ئەم بەستەرە هەڵبگرە بۆ بینین یان هەڵوەشاندنەوەی نۆرەکەت.',
+    chooseServices: 'خزمەتگوزارییەکان هەڵبژێرە', chooseStaff: 'کێ بۆت بکات؟', anyone: 'هەر کەسێکی بەتاڵ', total: 'کۆی گشتی', minutes: 'خولەک', chooseTime: 'کاتێک هەڵبژێرە',
+    bookedTitle: 'نۆرەکەت گیرا', with: 'لای', services: 'خزمەتگوزارییەکان', noTimes: 'لەم ڕۆژەدا کاتی بەتاڵ نییە. ڕۆژ یان کەسێکی تر تاقی بکەرەوە.', needService: 'لانیکەم یەک خزمەتگوزاری هەڵبژێرە.',
+    msgConfirmedSalon: '{clinic}: نۆرەکەت گیرا بۆ {services} لای {doctor} لە {when}. نۆرەکەت ببینە یان هەڵیبوەشێنەوە: {link}',
+    msgReminderSalon: '{clinic}: بیرخستنەوە، سبەی کاتژمێر {when} چاوەڕێتین لای {doctor} ({services}). {link}',
+    msgRebook: '{clinic}: ماوەیەکە سەردانمان نەکردووین. نۆرەی داهاتووت لێرە بگرە: {link}',
+    msgFollowUp: '{clinic}: سبەی کاتی سەردانی بەدواداچوونتە. کاتەکەت لێرە بگرە: {link}',
     langName: 'کوردی', bookWith: 'نۆرە بگرە', chooseDoctor: 'دکتۆرێک هەڵبژێرە', fee: 'نرخی سەردان', iqd: 'دینار',
     byTime: 'کاتێک هەڵبژێرە', byQueue: 'ژمارەی نۆرە وەربگرە', today: 'ئەمڕۆ', closed: 'داخراوە', noSlots: 'لەم ڕۆژەدا هیچ کاتێکی بەتاڵ نییە.',
     full: 'نۆرەی ئەم ڕۆژە پڕ بووە.', nextNumber: 'ژمارەکەت دەبێتە', expected: 'کاتی پێشبینیکراو', name: 'ناوت', phone: 'ژمارەی مۆبایل',
@@ -41,6 +55,13 @@ const T = {
     msgCode: 'کۆدی Nobat ـەکەت {code}ـە. دوای 10 خولەک بەسەردەچێت.'
   },
   ar: {
+    keepLink: 'احفظ هذا الرابط لرؤية حجزك أو إلغائه.',
+    chooseServices: 'اختر الخدمات', chooseStaff: 'من يقوم بها؟', anyone: 'أي شخص متاح', total: 'المجموع', minutes: 'دقيقة', chooseTime: 'اختر وقتاً',
+    bookedTitle: 'تم حجزك', with: 'مع', services: 'الخدمات', noTimes: 'لا توجد أوقات متاحة في هذا اليوم. جرّب يوماً أو شخصاً آخر.', needService: 'اختر خدمة واحدة على الأقل.',
+    msgConfirmedSalon: '{clinic}: تم حجزك لـ {services} مع {doctor} في {when}. شاهد حجزك أو ألغه: {link}',
+    msgReminderSalon: '{clinic}: تذكير، نراك غداً الساعة {when} مع {doctor} ({services}). {link}',
+    msgRebook: '{clinic}: مرّ وقت على زيارتك الأخيرة. احجز موعدك القادم هنا: {link}',
+    msgFollowUp: '{clinic}: موعد مراجعتك غداً. احجز وقتك هنا: {link}',
     langName: 'العربية', bookWith: 'احجز موعداً', chooseDoctor: 'اختر طبيباً', fee: 'الكشفية', iqd: 'دينار',
     byTime: 'اختر وقتاً', byQueue: 'خذ رقم دور', today: 'اليوم', closed: 'مغلق', noSlots: 'لا توجد أوقات متاحة في هذا اليوم.',
     full: 'دور هذا اليوم ممتلئ.', nextNumber: 'رقمك سيكون', expected: 'الوقت المتوقع', name: 'اسمك', phone: 'رقم الموبايل',

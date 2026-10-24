@@ -95,8 +95,8 @@ export function createBooking(db, { doctor, date, time, name, phone, lang }, now
     }
     const patientId = findOrCreatePatient(db, doctor.clinic_id, name, phone);
     const tok = token();
-    db.prepare('INSERT INTO bookings (clinic_id, doctor_id, patient_id, date, time, queue_no, source, token, lang) VALUES (?, ?, ?, ?, ?, ?, \'online\', ?, ?)')
-      .run(doctor.clinic_id, doctor.id, patientId, date, slot, nextQueueNo(db, doctor.id, date), tok, lang);
+    db.prepare('INSERT INTO bookings (clinic_id, doctor_id, patient_id, date, time, duration_min, queue_no, source, token, lang) VALUES (?, ?, ?, ?, ?, ?, ?, \'online\', ?, ?)')
+      .run(doctor.clinic_id, doctor.id, patientId, date, slot, slot ? doctor.slot_minutes : null, nextQueueNo(db, doctor.id, date), tok, lang);
     return getBookingByToken(db, tok);
   });
 }
@@ -112,7 +112,8 @@ export function addWalkIn(db, doctor, date, name, phone) {
 }
 
 const BOOKING_SELECT = `SELECT b.*, COALESCE(p.name, b.walkin_name, 'Walk-in') AS patient_name, p.phone AS patient_phone,
-  d.name AS doctor_name, d.mode AS doctor_mode, d.avg_minutes, c.name AS clinic_name, c.slug AS clinic_slug
+  d.name AS doctor_name, d.mode AS doctor_mode, d.avg_minutes, c.name AS clinic_name, c.slug AS clinic_slug, c.kind AS clinic_kind,
+  (SELECT group_concat(s.name, ' + ') FROM booking_services bs JOIN services s ON s.id = bs.service_id WHERE bs.booking_id = b.id) AS service_names
   FROM bookings b JOIN doctors d ON d.id = b.doctor_id JOIN clinics c ON c.id = b.clinic_id LEFT JOIN patients p ON p.id = b.patient_id`;
 
 export function getBookingByToken(db, tok) {
@@ -159,8 +160,8 @@ export function callNext(db, doctorId, date, nearAlertAt = 2) {
 }
 
 const ALLOWED = {
-  booked: ['arrived', 'cancelled', 'no_show'],
-  arrived: ['booked', 'no_show', 'cancelled'],
+  booked: ['arrived', 'in_room', 'cancelled', 'no_show'],
+  arrived: ['booked', 'in_room', 'no_show', 'cancelled'],
   in_room: ['done', 'no_show'],
   no_show: ['arrived'],
   done: [],
@@ -181,4 +182,102 @@ export function dueReminders(db, now = new Date()) {
 
 export function markReminded(db, id) {
   db.prepare(`UPDATE bookings SET reminded_at = datetime('now') WHERE id = ?`).run(id);
+}
+
+// ---------- Salons: services, a chosen (or any) staff member, times that never overlap ----------
+export const SALON_STEP = 15; // start times are offered every 15 minutes
+
+export function activeServices(db, clinicId, ids) {
+  const all = db.prepare('SELECT * FROM services WHERE clinic_id = ? AND active = 1 ORDER BY name').all(clinicId);
+  return ids ? all.filter((s) => ids.includes(s.id)) : all;
+}
+
+// Active staff (or the one chosen) who do every one of these services. Staff with no services set do everything.
+function staffFor(db, clinicId, staffId, serviceIds = []) {
+  const all = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? AND active = 1 ORDER BY name').all(clinicId);
+  const skills = db.prepare('SELECT service_id FROM staff_services WHERE doctor_id = ?');
+  return all.filter((d) => {
+    if (staffId && d.id !== staffId) return false;
+    const does = skills.all(d.id).map((r) => r.service_id);
+    return !does.length || serviceIds.every((id) => does.includes(id));
+  });
+}
+
+// Busy periods for one staff member on one day, in minutes from midnight.
+function busy(db, staffId, date) {
+  return db.prepare(`SELECT time, COALESCE(duration_min, 30) AS dur FROM bookings
+    WHERE doctor_id = ? AND date = ? AND time IS NOT NULL AND status NOT IN ('cancelled', 'no_show')`).all(staffId, date)
+    .map((b) => [toMinutes(b.time), toMinutes(b.time) + b.dur]);
+}
+
+function fits(db, staff, date, start, minutes, busyList) {
+  const end = start + minutes;
+  const inHours = hoursFor(db, staff.id, date).some((h) => start >= toMinutes(h.start_time) && end <= toMinutes(h.end_time));
+  return inHours && !busyList.some(([s, e]) => start < e && s < end);
+}
+
+// Start times when the chosen person (or anyone, when staffId is null) is free for the whole visit.
+export function salonTimes(db, clinicId, staffId, date, minutes, now = new Date(), serviceIds = []) {
+  const local = localParts(now);
+  const people = staffFor(db, clinicId, staffId, serviceIds).map((d) => ({ d, busy: busy(db, d.id, date), hours: hoursFor(db, d.id, date) }));
+  const out = [];
+  const first = Math.min(...people.flatMap((p) => p.hours.map((h) => toMinutes(h.start_time))), 24 * 60);
+  const last = Math.max(...people.flatMap((p) => p.hours.map((h) => toMinutes(h.end_time))), 0);
+  for (let m = first; m + minutes <= last; m += SALON_STEP) {
+    if (date === local.date && m <= toMinutes(local.time)) continue;
+    const free = people.filter((p) => fits(db, p.d, date, m, minutes, p.busy)).map((p) => p.d.id);
+    if (free.length) out.push({ time: fromMinutes(m), staff: free });
+  }
+  return out;
+}
+
+// Creates a salon booking (online or from the front desk). staffId null = first free person.
+export function createSalonBooking(db, { clinicId, staffId, serviceIds, date, time, name, phone, lang = 'ckb', source = 'online', checkDays = true }, now = new Date()) {
+  const services = activeServices(db, clinicId, serviceIds);
+  if (!services.length) throw new BookingError('needService');
+  const minutes = services.reduce((a, s) => a + s.minutes, 0);
+  return tx(db, () => {
+    const start = toMinutes(time);
+    const candidates = staffFor(db, clinicId, staffId, services.map((x) => x.id));
+    if (checkDays && !candidates.some((d) => bookableDays(db, d.id, now).some((x) => x.date === date && x.open))) throw new BookingError('closed');
+    const staff = candidates.find((d) => fits(db, d, date, start, minutes, busy(db, d.id, date)));
+    if (!staff) throw new BookingError(candidates.some((d) => hoursFor(db, d.id, date).length) ? 'slotTaken' : 'closed');
+    const patientId = phone ? findOrCreatePatient(db, clinicId, name, phone) : null;
+    const tok = token();
+    const id = Number(db.prepare(`INSERT INTO bookings (clinic_id, doctor_id, patient_id, walkin_name, date, time, duration_min, queue_no, status, source, token, lang)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(clinicId, staff.id, patientId, patientId ? null : name, date, time, minutes,
+      nextQueueNo(db, staff.id, date), 'booked', source, tok, lang).lastInsertRowid);
+    const link = db.prepare('INSERT INTO booking_services (booking_id, service_id) VALUES (?, ?)');
+    for (const s of services) link.run(id, s.id);
+    return getBookingByToken(db, tok);
+  });
+}
+
+// All of a salon's bookings for one day, across staff, in time order.
+export function salonDay(db, clinicId, date) {
+  return db.prepare(`${BOOKING_SELECT} WHERE b.clinic_id = ? AND b.date = ? AND b.status != 'cancelled' ORDER BY b.time, d.name`).all(clinicId, date);
+}
+
+// Finished salon visits whose "book again" reminder is due today, for customers with nothing booked ahead.
+export function dueRebooks(db, now = new Date()) {
+  const today = localParts(now).date;
+  return db.prepare(`${BOOKING_SELECT} WHERE b.status = 'done' AND b.rebook_sent_at IS NULL AND p.phone IS NOT NULL AND c.kind = 'salon'
+    AND date(b.date, '+' || (SELECT MAX(s.rebook_weeks) * 7 FROM booking_services bs JOIN services s ON s.id = bs.service_id WHERE bs.booking_id = b.id) || ' days') <= ?
+    AND (SELECT MAX(s.rebook_weeks) FROM booking_services bs JOIN services s ON s.id = bs.service_id WHERE bs.booking_id = b.id) > 0
+    AND NOT EXISTS (SELECT 1 FROM bookings f WHERE f.patient_id = b.patient_id AND f.date >= ? AND f.status IN ${ACTIVE})`).all(today, today);
+}
+
+export function markRebookSent(db, id) {
+  db.prepare(`UPDATE bookings SET rebook_sent_at = datetime('now') WHERE id = ?`).run(id);
+}
+
+// Patients whose follow-up visit is tomorrow and who have not been told yet.
+export function dueFollowUps(db, now = new Date()) {
+  const tomorrow = addDays(localParts(now).date, 1);
+  return db.prepare(`SELECT p.*, c.name AS clinic_name, c.slug AS clinic_slug, (SELECT b.lang FROM bookings b WHERE b.patient_id = p.id ORDER BY b.id DESC LIMIT 1) AS lang FROM patients p JOIN clinics c ON c.id = p.clinic_id
+    WHERE p.follow_up_date = ? AND (p.follow_up_sent_at IS NULL OR p.follow_up_sent_at < date('now', '-2 days'))`).all(tomorrow);
+}
+
+export function markFollowUpSent(db, id) {
+  db.prepare(`UPDATE patients SET follow_up_sent_at = datetime('now') WHERE id = ?`).run(id);
 }

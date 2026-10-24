@@ -34,7 +34,7 @@ export function loadUser(db) {
     req.user = null;
     const id = readCookie(req);
     if (id) {
-      const row = db.prepare(`SELECT u.id, u.name, u.email, u.role, u.clinic_id, s.id AS session_id, s.expires_at
+      const row = db.prepare(`SELECT u.id, u.name, u.email, u.role, u.clinic_id, u.doctor_id, u.lang, s.id AS session_id, s.expires_at
         FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id = ?`).get(id);
       if (row && row.expires_at > Date.now()) req.user = row;
     }
@@ -44,12 +44,12 @@ export function loadUser(db) {
 
 export function requireUser(kind) {
   return (req, res, next) => {
-    if (!req.user) return kind === 'page' ? res.redirect('/login') : res.status(401).json({ error: 'Sign in again.' });
+    if (!req.user) return kind === 'page' ? res.redirect('/login') : res.status(401).json({ error: 'signInAgain' });
     next();
   };
 }
 
 export function requireOwner(req, res, next) {
-  if (!req.user || req.user.role !== 'owner') return res.status(403).json({ error: 'Only the clinic owner can change settings.' });
+  if (!req.user || req.user.role !== 'owner') return res.status(403).json({ error: 'errGeneric' });
   next();
 }

@@ -1,3 +1,4 @@
+const T = JSON.parse(document.getElementById('data').textContent).t;
 document.getElementById('login').addEventListener('submit', async (e) => {
   e.preventDefault();
   const err = document.getElementById('err');
@@ -7,6 +8,6 @@ document.getElementById('login').addEventListener('submit', async (e) => {
     body: JSON.stringify({ email: document.getElementById('email').value, password: document.getElementById('password').value })
   });
   if (res.ok) { location.href = '/app'; return; }
-  err.textContent = (await res.json().catch(() => ({}))).error || 'Could not sign in. Try again.';
+  err.textContent = res.status === 401 ? T.wrongLogin : T.errGeneric;
   err.hidden = false;
 });

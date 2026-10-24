@@ -1,0 +1,35 @@
+# One-click setup on Render (render.com): New → Blueprint → pick this repository.
+# After the first deploy, open the service's Shell and run:
+#   npm run seed -- --name "Your Clinic" --email you@example.com --password "a-long-password" --no-demo-doctor
+services:
+  - type: web
+    name: nobat
+    runtime: docker
+    plan: starter
+    region: frankfurt
+    healthCheckPath: /healthz
+    disk:
+      name: nobat-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_FILE
+        value: /data/nobat.db
+      - key: BASE_URL
+        sync: false # set to your public address, e.g. https://nobat.onrender.com or https://nobat.app
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_ID
+        sync: false
+      - key: WHATSAPP_TEMPLATE
+        sync: false
+      - key: WHATSAPP_TEMPLATE_LANG
+        sync: false
+      - key: SMS_URL
+        sync: false
+      - key: SMS_TOKEN
+        sync: false
+      - key: SMS_SENDER
+        sync: false

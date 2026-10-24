@@ -5,9 +5,21 @@
   const cancelBtn = document.getElementById('cancel');
   let timer;
 
+  const ltr = (text) => { const b = document.createElement('bdi'); b.dir = 'ltr'; b.textContent = text; return b; };
   const el = (tag, cls, ...kids) => { const n = document.createElement(tag); if (cls) n.className = cls; n.append(...kids); return n; };
 
+  function renderSalon(s) {
+    box.className = 'ticket' + (s.status === 'done' ? ' turn' : ['cancelled', 'no_show'].includes(s.status) ? ' over' : '');
+    const line = s.status === 'cancelled' ? T.cancelled : s.status === 'done' ? T.finished : s.status === 'no_show' ? T.missed : T.bookedTitle;
+    box.replaceChildren(
+      el('p', 'eta', line),
+      el('div', 'nums', el('div', '', el('span', '', T.time), el('b', 'ltr', s.time || '–')), el('div', '', el('span', '', T.with), el('b', 'small-b', s.staff))),
+      el('div', 'meta', `${T.date}: `, ltr(s.date), s.services ? ` · ${s.services}` : ''));
+    cancelBtn.hidden = !['booked', 'arrived'].includes(s.status);
+  }
+
   function render(s) {
+    if (s.salon) return renderSalon(s);
     box.className = 'ticket' + (s.status === 'in_room' ? ' turn' : ['done', 'cancelled', 'no_show'].includes(s.status) ? ' over' : '');
     const nums = el('div', 'nums',
       el('div', '', el('span', '', T.yourNumber), el('b', '', String(s.queueNo))),
@@ -19,7 +31,7 @@
     else if (s.status === 'no_show') line = T.missed;
     else if (s.nowServing == null && s.ahead === 0) line = T.notStarted;
     else line = `${s.ahead} ${T.ahead} · ${T.aboutMin.replace('{m}', s.minutes)}`;
-    const meta = el('div', 'meta', `${T.date}: ${s.date}` + (s.time ? ` · ${T.time}: ${s.time}` : ''));
+    const meta = el('div', 'meta', `${T.date}: `, ltr(s.date), s.time ? ` · ${T.time}: ` : '', s.time ? ltr(s.time) : '');
     box.replaceChildren(nums, el('p', 'eta', line), meta);
     cancelBtn.hidden = !['booked', 'arrived'].includes(s.status);
     if (['done', 'cancelled'].includes(s.status)) clearInterval(timer);
