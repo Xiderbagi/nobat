@@ -1,0 +1,16 @@
+{
+  "name": "nobat",
+  "version": "0.1.0",
+  "description": "Clinic booking, live queue and WhatsApp/SMS reminders for clinics in the Kurdistan Region",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "seed": "node --disable-warning=ExperimentalWarning scripts/seed.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  },
+  "dependencies": {
+    "express": "4.21.2"
+  }
+}
