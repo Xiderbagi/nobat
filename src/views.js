@@ -7,7 +7,7 @@ import { STAFF_LANGS, staffDict, st } from './staff-i18n.js';
 import { categoryName } from './categories.js';
 import { BEAUTY_ART, CATEGORY_ICONS, DOOR_ART, HERO_ART, MOOD_ART, avatarTone } from './icons.js';
 
-const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#ffc53d"/></svg>';
+const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="13" y="7.5" width="3" height="6" rx="1.5" fill="#fff"/><rect x="24" y="7.5" width="3" height="6" rx="1.5" fill="#fff"/><rect x="8.5" y="10.5" width="23" height="21" rx="4.5" fill="#fff"/><path d="M8.5 15a4.5 4.5 0 0 1 4.5-4.5h14a4.5 4.5 0 0 1 4.5 4.5v1.5h-23Z" fill="#ffb800"/><path d="M14.5 23.5l3.8 3.8 7.4-7.6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 // Data for page scripts goes in a JSON script tag, escaped so it can't close the tag.
 // A fingerprint of the styles and scripts, added to their links, so phones load new versions at once after an update.
@@ -28,9 +28,9 @@ export function page({ title, lang = 'en', body, data, script, bodyClass = '', m
 <link rel="stylesheet" href="/static/vendor/vazirmatn/index.css">
 <link rel="stylesheet" href="/static/app.css?v=${ASSET_V}">
 <link rel="manifest" href="${esc(manifest)}">
-<meta name="theme-color" content="#0b8f7a">
-<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#064d39">
+<link rel="icon" href="/static/icons/icon.svg?v=${ASSET_V}" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="${esc(appName)}">

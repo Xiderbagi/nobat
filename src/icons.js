@@ -35,28 +35,28 @@ export function avatarTone(name) {
 export const HERO_ART = `<svg class="hero-art" viewBox="0 0 520 300" aria-hidden="true" focusable="false">
   <defs><clipPath id="hero-clip"><rect width="520" height="300" rx="26"/></clipPath></defs>
   <g clip-path="url(#hero-clip)">
-  <circle cx="410" cy="78" r="46" fill="#FFC53D"/>
-  <circle cx="410" cy="78" r="64" fill="#FFC53D" opacity=".18"/>
-  <path d="M0 230 L70 150 L120 190 L190 110 L250 170 L300 130 L370 200 L430 150 L520 220 V300 H0Z" fill="#0B8F7A" opacity=".35"/>
-  <path d="M0 255 L60 205 L130 240 L200 175 L270 230 L340 185 L410 240 L470 205 L520 235 V300 H0Z" fill="#0B8F7A" opacity=".6"/>
+  <circle cx="410" cy="78" r="46" fill="#FFB800"/>
+  <circle cx="410" cy="78" r="64" fill="#FFB800" opacity=".18"/>
+  <path d="M0 230 L70 150 L120 190 L190 110 L250 170 L300 130 L370 200 L430 150 L520 220 V300 H0Z" fill="#0A6B4F" opacity=".35"/>
+  <path d="M0 255 L60 205 L130 240 L200 175 L270 230 L340 185 L410 240 L470 205 L520 235 V300 H0Z" fill="#0A6B4F" opacity=".6"/>
   <path d="M190 110 L210 132 L198 130 L190 140 L182 128 L172 133Z" fill="#fff" opacity=".9"/>
   <path d="M300 130 L314 146 L305 145 L300 152 L294 144 L288 148Z" fill="#fff" opacity=".9"/>
   <rect x="70" y="190" width="120" height="80" rx="10" fill="#fff"/>
-  <path d="M60 196 L130 158 L200 196Z" fill="#FF6F59"/>
-  <rect x="118" y="214" width="24" height="56" rx="4" fill="#0B8F7A"/>
-  <rect x="84" y="210" width="24" height="20" rx="4" fill="#D7F3EC"/>
-  <rect x="152" y="210" width="24" height="20" rx="4" fill="#D7F3EC"/>
+  <path d="M60 196 L130 158 L200 196Z" fill="#FF5A3C"/>
+  <rect x="118" y="214" width="24" height="56" rx="4" fill="#0A6B4F"/>
+  <rect x="84" y="210" width="24" height="20" rx="4" fill="#D2EEE2"/>
+  <rect x="152" y="210" width="24" height="20" rx="4" fill="#D2EEE2"/>
   <rect x="124" y="170" width="12" height="4" rx="2" fill="#fff"/><rect x="128" y="166" width="4" height="12" rx="2" fill="#fff"/>
   <g transform="rotate(8 330 190)">
     <rect x="280" y="96" width="104" height="186" rx="18" fill="#10223A"/>
     <rect x="288" y="108" width="88" height="162" rx="12" fill="#fff"/>
-    <rect x="296" y="120" width="72" height="56" rx="10" fill="#0B8F7A"/>
+    <rect x="296" y="120" width="72" height="56" rx="10" fill="#0A6B4F"/>
     <text x="332" y="160" text-anchor="middle" font-family="Vazirmatn Variable, sans-serif" font-size="30" font-weight="800" fill="#fff">14</text>
-    <rect x="296" y="186" width="72" height="8" rx="4" fill="#E6EEF0"/><rect x="296" y="186" width="46" height="8" rx="4" fill="#FFC53D"/>
+    <rect x="296" y="186" width="72" height="8" rx="4" fill="#E6EEF0"/><rect x="296" y="186" width="46" height="8" rx="4" fill="#FFB800"/>
     <rect x="296" y="204" width="50" height="7" rx="3.5" fill="#D9E2E5"/><rect x="296" y="218" width="64" height="7" rx="3.5" fill="#D9E2E5"/>
-    <rect x="296" y="240" width="72" height="20" rx="10" fill="#FF6F59"/>
+    <rect x="296" y="240" width="72" height="20" rx="10" fill="#FF5A3C"/>
   </g>
-  <g fill="#FF6F59"><circle cx="452" cy="170" r="5"/><circle cx="470" cy="150" r="3"/><circle cx="236" cy="70" r="4" fill="#0B8F7A"/></g>
+  <g fill="#FF5A3C"><circle cx="452" cy="170" r="5"/><circle cx="470" cy="150" r="3"/><circle cx="236" cy="70" r="4" fill="#0A6B4F"/></g>
   </g>
 </svg>`;
 
@@ -122,13 +122,13 @@ export const MOOD_ART = {
 const doorSvg = (bg, inner) => `<svg viewBox="0 0 300 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="300" height="420" fill="${bg}"/>${inner}</svg>`;
 export const DOOR_ART = {
   clinic: doorSvg('#CFEFE6', `
-    <circle cx="225" cy="150" r="46" fill="#FFC53D"/><circle cx="225" cy="150" r="66" fill="#FFC53D" opacity=".2"/>
-    <path d="M0 330 60 250l40 40 60-90 50 70 40-40 50 60v130H0Z" fill="#0B8F7A" opacity=".35"/>
-    <path d="M0 360 50 320l60 30 60-50 60 40 70-30v130H0Z" fill="#0B8F7A" opacity=".6"/>
+    <circle cx="225" cy="150" r="46" fill="#FFB800"/><circle cx="225" cy="150" r="66" fill="#FFB800" opacity=".2"/>
+    <path d="M0 330 60 250l40 40 60-90 50 70 40-40 50 60v130H0Z" fill="#0A6B4F" opacity=".35"/>
+    <path d="M0 360 50 320l60 30 60-50 60 40 70-30v130H0Z" fill="#0A6B4F" opacity=".6"/>
     <rect x="70" y="250" width="130" height="110" rx="12" fill="#fff"/>
-    <path d="M58 258 135 214l77 44Z" fill="#FF6F59"/>
-    <rect x="120" y="290" width="30" height="70" rx="5" fill="#0B8F7A"/>
-    <rect x="84" y="282" width="26" height="22" rx="5" fill="#D7F3EC"/><rect x="160" y="282" width="26" height="22" rx="5" fill="#D7F3EC"/>
+    <path d="M58 258 135 214l77 44Z" fill="#FF5A3C"/>
+    <rect x="120" y="290" width="30" height="70" rx="5" fill="#0A6B4F"/>
+    <rect x="84" y="282" width="26" height="22" rx="5" fill="#D2EEE2"/><rect x="160" y="282" width="26" height="22" rx="5" fill="#D2EEE2"/>
     <rect x="128" y="228" width="14" height="5" rx="2" fill="#fff"/><rect x="132.5" y="223.5" width="5" height="14" rx="2" fill="#fff"/>`),
   salon: doorSvg('#EFE3D6', `
     <path d="M60 420V170a90 90 0 0 1 180 0v250Z" fill="#E4D2BE"/>
