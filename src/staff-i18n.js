@@ -5,6 +5,9 @@ export const STAFF_LANGS = ['ckb', 'ar', 'en'];
 
 const S = {
   en: {
+    photosTitle: 'Photos', photosHint: 'Real photos bring more bookings: the waiting room, the team, your work. Photos are made smaller automatically.', coverPhoto: 'Cover photo (top of your page)', galleryTitle: 'Gallery',
+    choosePhoto: 'Choose photo', addPhotos: 'Add photos', uploading: 'Uploading…', photoSaved: 'Photo saved.', photoBad: "We couldn't read that file. Try a JPG or PNG photo.", photoLimit: 'The gallery is full (12 photos). Remove one first.',
+    removePhoto: 'Remove', about: 'About us', aboutHint: 'A few sentences patients see on your page: what you do, what makes you different.',
     reviews: 'Reviews', reviewsIntro: 'What patients said after their visit. Only patients who came can review, once per visit.', overall: 'Overall', comment: 'Comment', noReviewsYet: 'No reviews yet. Patients can review from their booking link after the visit.',
     findSection: 'Nobat search', listedLabel: 'Show us in Nobat search', locationLabel: 'Location on the map', useHere: 'Use my current location', pasteMaps: 'Or paste a Google Maps link',
     lat: 'Latitude', lng: 'Longitude', locSet: 'Location set. Save to keep it.', locFail: "Couldn't read a location. Try 'Use my current location' while at the clinic, or a full Google Maps link.",
@@ -50,6 +53,9 @@ const S = {
     printPoster: 'Print', posterHelp: 'Print on A4 or A5 and put it in the waiting room, at reception and on the door.'
   },
   ckb: {
+    photosTitle: 'وێنەکان', photosHint: 'وێنەی ڕاستەقینە نۆرەی زیاتر دەهێنێت: هۆڵی چاوەڕوانی، تیمەکە، کارەکانتان. وێنەکان بە خۆکار بچووک دەکرێنەوە.', coverPhoto: 'وێنەی سەرەکی (سەرەوەی پەڕەکەت)', galleryTitle: 'گەلەری',
+    choosePhoto: 'وێنە هەڵبژێرە', addPhotos: 'زیادکردنی وێنە', uploading: 'باردەکرێت…', photoSaved: 'وێنە پاشەکەوت کرا.', photoBad: 'نەمانتوانی ئەو فایلە بخوێنینەوە. وێنەیەکی JPG یان PNG تاقی بکەرەوە.', photoLimit: 'گەلەری پڕە (12 وێنە). سەرەتا یەکێک لاببە.',
+    removePhoto: 'لابردن', about: 'دەربارەی ئێمە', aboutHint: 'چەند ڕستەیەک کە نەخۆشەکان لە پەڕەکەت دەیبینن: چی دەکەن، چی جیاتان دەکاتەوە.',
     reviews: 'هەڵسەنگاندنەکان', reviewsIntro: 'ئەوەی نەخۆشەکان دوای سەردان وتوویانە. تەنها ئەو نەخۆشانەی هاتوون دەتوانن هەڵیبسەنگێنن، یەک جار بۆ هەر سەردانێک.', overall: 'گشتی', comment: 'تێبینی', noReviewsYet: 'هێشتا هیچ هەڵسەنگاندنێک نییە. نەخۆشەکان دوای سەردان لە بەستەری نۆرەکەیانەوە هەڵدەسەنگێنن.',
     findSection: 'گەڕانی Nobat', listedLabel: 'لە گەڕانی Nobat پیشانمان بدە', locationLabel: 'شوێن لەسەر نەخشە', useHere: 'شوێنی ئێستام بەکاربهێنە', pasteMaps: 'یان بەستەرێکی Google Maps دابنێ',
     lat: 'هێڵی پانی', lng: 'هێڵی درێژی', locSet: 'شوێن دیاری کرا. پاشەکەوتی بکە.', locFail: 'نەمانتوانی شوێنەکە بخوێنینەوە. کاتێک لە کلینیکیت «شوێنی ئێستام» تاقی بکەرەوە، یان بەستەرێکی تەواوی Google Maps.',
@@ -95,6 +101,9 @@ const S = {
     printPoster: 'چاپکردن', posterHelp: 'لەسەر A4 یان A5 چاپی بکە و لە هۆڵی چاوەڕوانی، پێشوازی و دەرگا دایبنێ.'
   },
   ar: {
+    photosTitle: 'الصور', photosHint: 'الصور الحقيقية تجلب حجوزات أكثر: قاعة الانتظار، الفريق، أعمالكم. تُصغَّر الصور تلقائياً.', coverPhoto: 'صورة الغلاف (أعلى صفحتك)', galleryTitle: 'معرض الصور',
+    choosePhoto: 'اختر صورة', addPhotos: 'أضف صوراً', uploading: 'جارٍ الرفع…', photoSaved: 'تم حفظ الصورة.', photoBad: 'تعذرت قراءة الملف. جرّب صورة JPG أو PNG.', photoLimit: 'المعرض ممتلئ (12 صورة). احذف واحدة أولاً.',
+    removePhoto: 'حذف', about: 'من نحن', aboutHint: 'بضع جمل يراها المرضى في صفحتك: ماذا تقدمون، وما الذي يميزكم.',
     reviews: 'التقييمات', reviewsIntro: 'ما قاله المرضى بعد زيارتهم. فقط من حضر يمكنه التقييم، مرة لكل زيارة.', overall: 'العام', comment: 'التعليق', noReviewsYet: 'لا توجد تقييمات بعد. يقيّم المرضى من رابط حجزهم بعد الزيارة.',
     findSection: 'بحث Nobat', listedLabel: 'أظهرنا في بحث Nobat', locationLabel: 'الموقع على الخريطة', useHere: 'استخدم موقعي الحالي', pasteMaps: 'أو الصق رابط خرائط Google',
     lat: 'خط العرض', lng: 'خط الطول', locSet: 'تم تحديد الموقع. احفظ لتثبيته.', locFail: 'تعذرت قراءة الموقع. جرّب «موقعي الحالي» وأنت في العيادة، أو رابط خرائط Google كاملاً.',

@@ -17,7 +17,8 @@ export const CATEGORIES = [
   { key: 'physio', kind: 'clinic', en: 'Physiotherapy', ckb: 'فیزیۆتێراپی', ar: 'علاج طبيعي', words: 'physio physiotherapy فیزیۆ طبيعي' },
   { key: 'barber_men', kind: 'salon', en: "Men's barber", ckb: 'سەرتاشخانەی پیاوان', ar: 'حلاق رجالي', words: 'barber men beard haircut سەرتاش پیاو حلاق رجال' },
   { key: 'salon_women', kind: 'salon', en: "Women's salon", ckb: 'ساڵۆنی ئافرەتان', ar: 'صالون نسائي', words: 'salon women hair ladies ساڵۆن ئافرەت صالون نساء' },
-  { key: 'nails', kind: 'salon', en: 'Nails and spa', ckb: 'نینۆک و سپا', ar: 'أظافر وسبا', words: 'nails manicure pedicure spa نینۆک أظافر' },
+  { key: 'spa', kind: 'salon', en: 'Spa and wellness', ckb: 'سپا و تەندروستی', ar: 'سبا وعافية', words: 'spa wellness massage hammam sauna relax facial سپا مەساج حەمام ئارامی سبا مساج حمام استرخاء' },
+  { key: 'nails', kind: 'salon', en: 'Nails', ckb: 'نینۆک', ar: 'أظافر', words: 'nails manicure pedicure نینۆک أظافر' },
   { key: 'makeup', kind: 'salon', en: 'Makeup and bridal', ckb: 'مەیکئەپ و بووک', ar: 'مكياج وعرائس', words: 'makeup bridal bride wedding مەیکئەپ بووک مكياج عروس' },
   { key: 'kids_hair', kind: 'salon', en: "Children's haircut", ckb: 'قژبڕینی منداڵان', ar: 'قص شعر أطفال', words: 'kids children haircut منداڵ أطفال' }
 ];

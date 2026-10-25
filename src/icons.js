@@ -18,6 +18,7 @@ export const CATEGORY_ICONS = {
   physio: { tone: 'teal', svg: svg('<circle cx="13" cy="4.5" r="2"/><path d="M5 11l4-2 4 1 3 4"/><path d="M9 9l1 6-3 6M10 15l5 2 2 4"/>') },
   barber_men: { tone: 'ink', svg: svg('<circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M8.2 16 17 4M15.8 16 7 4"/>') },
   salon_women: { tone: 'rose', svg: svg('<path d="M5 21c0-6 1-11 4-14 2-2 6-2 8 0 3 3 2 8 2 14"/><path d="M9 7c1 3 3 4 6 4"/><path d="M12 14c-1 2-1 5-1 7"/>') },
+  spa: { tone: 'teal', svg: svg('<path d="M12 20c-4 0-8-2.5-8-7 3 0 5.5 1 8 4 2.5-3 5-4 8-4 0 4.5-4 7-8 7z"/><path d="M12 17c-1.8-2-2.8-4.3-2.8-6.8C9.2 7.5 10.4 5 12 3c1.6 2 2.8 4.5 2.8 7.2 0 2.5-1 4.8-2.8 6.8z"/>') },
   nails: { tone: 'coral', svg: svg('<rect x="8" y="11" width="8" height="10" rx="2"/><path d="M10 11V7h4v4M11 7V3h2v4"/>') },
   makeup: { tone: 'peach', svg: svg('<path d="M9 22v-9h6v9z"/><path d="M10 13V7.5L14 4v9"/>') },
   kids_hair: { tone: 'sun', svg: svg('<path d="M4 7h16M4 7v3M8 7v3M12 7v3M16 7v3M20 7v3"/><path d="M8 14c0 4 2 7 4 7s4-3 4-7"/>') }
@@ -58,3 +59,61 @@ export const HERO_ART = `<svg class="hero-art" viewBox="0 0 520 300" aria-hidden
   <g fill="#FF6F59"><circle cx="452" cy="170" r="5"/><circle cx="470" cy="150" r="3"/><circle cx="236" cy="70" r="4" fill="#0B8F7A"/></g>
   </g>
 </svg>`;
+
+// Calm picture for the salons and spa pages until a real photo is added: an arch, leaves, stones and a candle.
+export const BEAUTY_ART = `<svg class="hero-art" viewBox="0 0 520 320" aria-hidden="true" focusable="false">
+  <defs><clipPath id="beauty-clip"><rect width="520" height="320" rx="28"/></clipPath></defs>
+  <g clip-path="url(#beauty-clip)">
+    <rect width="520" height="320" fill="#EFE6DA"/>
+    <path d="M150 320V150a110 110 0 0 1 220 0v170Z" fill="#E3D3BF"/>
+    <circle cx="260" cy="120" r="34" fill="#F6EEE3"/>
+    <g fill="#7E9C7F">
+      <path d="M95 320C80 250 60 210 20 185c45 5 80 40 95 135Z"/>
+      <path d="M118 320c-5-80 10-140 55-185-15 60-25 120-25 185Z" fill="#5F7F63"/>
+      <path d="M80 320c-40-40-70-55-110-55 40-20 85-10 125 55Z" fill="#9DB59B"/>
+    </g>
+    <g fill="#5F7F63">
+      <path d="M430 320c5-70-10-125-45-165 30 15 65 70 70 165Z"/>
+      <path d="M455 320c20-60 45-95 85-110-30 35-50 70-60 110Z" fill="#7E9C7F"/>
+      <path d="M410 250c-30-20-55-22-80-15 25-20 55-25 85 0Z" fill="#9DB59B"/>
+    </g>
+    <ellipse cx="260" cy="300" rx="120" ry="14" fill="#D8C6AE"/>
+    <ellipse cx="225" cy="285" rx="34" ry="16" fill="#B9A58C"/>
+    <ellipse cx="270" cy="270" rx="26" ry="13" fill="#CDBBA3"/>
+    <ellipse cx="300" cy="258" rx="18" ry="9" fill="#A8937A"/>
+    <rect x="330" y="240" width="26" height="46" rx="5" fill="#F8F3EC"/>
+    <path d="M343 222c5 7 6 12 0 18-6-6-5-11 0-18Z" fill="#E9B46B"/>
+    <circle cx="343" cy="232" r="14" fill="#F3D8A7" opacity=".35"/>
+  </g>
+</svg>`;
+
+// Pictures for the Barbers, Spa and Women's salons cards until real photos are added.
+const moodSvg = (bg, inner) => `<svg viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="400" height="260" fill="${bg}"/>${inner}</svg>`;
+const leaves = (x, y, s, c1, c2) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M0 120C-4 70 6 30 30 0c4 40-6 80-30 120Z" fill="${c1}"/><path d="M0 120c-30-30-50-40-80-38 26-18 60-12 80 38Z" fill="${c2}"/><path d="M0 120c20-34 42-48 72-50-22 16-40 30-72 50Z" fill="${c1}" opacity=".8"/></g>`;
+export const MOOD_ART = {
+  barber_men: moodSvg('#E6D6C3', `
+    <circle cx="300" cy="70" r="90" fill="#EFE3D4"/>
+    <rect x="96" y="40" width="34" height="170" rx="17" fill="#FBF7F1"/>
+    <clipPath id="pole"><rect x="96" y="40" width="34" height="170" rx="17"/></clipPath>
+    <g clip-path="url(#pole)" fill="#B5674D" opacity=".85"><path d="M80 60l70-40v18l-70 40Z"/><path d="M80 110l70-40v18l-70 40Z"/><path d="M80 160l70-40v18l-70 40Z"/><path d="M80 210l70-40v18l-70 40Z"/></g>
+    <rect x="90" y="28" width="46" height="16" rx="8" fill="#3B3A36"/><rect x="90" y="206" width="46" height="16" rx="8" fill="#3B3A36"/>
+    <g fill="none" stroke="#3B3A36" stroke-width="7" stroke-linecap="round"><circle cx="230" cy="190" r="18"/><circle cx="290" cy="190" r="18"/><path d="M243 177 312 80M277 177 208 80"/></g>
+    ${leaves(360, 140, .9, '#7E9C7F', '#9DB59B')}`),
+  spa: moodSvg('#DCE4D4', `
+    <circle cx="200" cy="90" r="80" fill="#E8EEE1"/>
+    ${leaves(80, 150, 1, '#5F7F63', '#7E9C7F')}
+    ${leaves(330, 160, .85, '#7E9C7F', '#9DB59B')}
+    <ellipse cx="200" cy="240" rx="120" ry="14" fill="#C8D3BD"/>
+    <ellipse cx="200" cy="222" rx="56" ry="20" fill="#9C8F7E"/>
+    <ellipse cx="200" cy="190" rx="42" ry="16" fill="#B7A995"/>
+    <ellipse cx="200" cy="164" rx="30" ry="12" fill="#CFC3B0"/>
+    <ellipse cx="200" cy="144" rx="18" ry="8" fill="#E4DACB"/>
+    <path d="M200 120c10 -16 26 -22 40 -20-6 16-22 24-40 20Z" fill="#5F7F63"/>`),
+  salon_women: moodSvg('#F0DFD6', `
+    <circle cx="210" cy="110" r="78" fill="#F8EDE7" stroke="#D9B8A6" stroke-width="10"/>
+    <rect x="203" y="186" width="14" height="60" rx="7" fill="#D9B8A6"/>
+    <path d="M150 230h120" stroke="#C99B85" stroke-width="10" stroke-linecap="round"/>
+    ${leaves(70, 130, 1, '#8FA88D', '#B3C4AA')}
+    <g transform="translate(300 60) rotate(20)"><rect width="22" height="120" rx="6" fill="#B5674D"/><g stroke="#B5674D" stroke-width="5">${Array.from({ length: 8 }, (_, i) => `<path d="M22 ${10 + i * 14}h22"/>`).join('')}</g></g>
+    <circle cx="190" cy="92" r="10" fill="#fff" opacity=".7"/>`)
+};

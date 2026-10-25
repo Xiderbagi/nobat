@@ -220,6 +220,23 @@ const MIGRATIONS = [
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
   CREATE INDEX reviews_clinic ON reviews (clinic_id, hidden);
+  `,
+  // 6: photos for clinics and salons, photos for the site's own pages, an "about" text
+  `
+  ALTER TABLE clinics ADD COLUMN about TEXT NOT NULL DEFAULT '';
+  CREATE TABLE photos (
+    id INTEGER PRIMARY KEY,
+    clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+    file TEXT NOT NULL UNIQUE,
+    kind TEXT NOT NULL CHECK (kind IN ('cover', 'gallery')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX photos_clinic ON photos (clinic_id, kind);
+  CREATE TABLE site_photos (
+    key TEXT PRIMARY KEY,
+    file TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
   `
 ];
 

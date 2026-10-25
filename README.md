@@ -48,6 +48,15 @@ Until WhatsApp or SMS is set up, nothing is actually sent. Messages are printed 
 - **Reviews:** after a finished visit, the patient's booking page asks them to rate four points (for clinics: waiting time, cleanliness, the doctor, value for money) and leave a comment. Only real visits can be reviewed, once each. Clinics see their reviews under **Reviews**; you can hide abusive ones in the admin screen.
 - **Map tiles** come from OpenStreetMap, which is fine for a small start. When traffic grows, switch to a paid map tile provider (change the address in `public/search.js` and in the security policy in `src/server.js`).
 
+## Clinics, salons and spa: three doors, two worlds
+
+- The home page (`/`) keeps the search and adds three big doors: **Clinics and doctors**, **Salons and barbers**, and **Spa and wellness**.
+- `/clinics` is the clinic world (fresh teal): only clinic categories and clinics.
+- `/beauty` is the calm world (cream, sage and clay, botanical pictures): Barbers, Spa and wellness and Women's salons photo cards, salon categories and salons only. `/spa` opens it with spa already chosen. Every salon's own booking page uses the same calm look.
+- **Photos:** until you add real photos, the pages show drawings. To add your own (free photos from unsplash.com or pexels.com, or your own), go to **Admin → Website photos** and upload the hero photo for each world and the three beauty cards.
+- **Clinic and salon photos:** each business adds a cover photo, a gallery (up to 12 photos) and an "About" text in **Settings**. The cover shows on their page and in search results.
+- Photos are saved in an `uploads` folder next to the database (`/data/uploads` on Render), so they stay on the disk. Include that folder when you copy backups somewhere else.
+
 ## Your admin screen
 
 Add clinics, see how each is doing, record payments, reset passwords and switch clinics off and on, all at `your-address/admin`.

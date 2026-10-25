@@ -2,7 +2,7 @@ import { esc } from './util.js';
 import { LANGS, RTL, t, dictFor } from './i18n.js';
 import { STAFF_LANGS, staffDict, st } from './staff-i18n.js';
 import { categoryName } from './categories.js';
-import { CATEGORY_ICONS, HERO_ART, avatarTone } from './icons.js';
+import { BEAUTY_ART, CATEGORY_ICONS, HERO_ART, MOOD_ART, avatarTone } from './icons.js';
 
 const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#ffc53d"/></svg>';
 
@@ -61,49 +61,96 @@ export function reviewsBlock(lang, summary, points, reviews) {
   </section>`;
 }
 
-export function directoryPage(lang, categories) {
+// The home page and its two "worlds": /clinics (fresh teal) and /beauty (calm botanical, for salons, barbers and spa).
+const WORLD_PATH = { all: '/', clinic: '/clinics', salon: '/beauty' };
+const slice = (svg) => svg.replace('<svg ', '<svg preserveAspectRatio="xMidYMid slice" ');
+const photoOr = (url, fallback, cls = 'hero-photo') => (url ? `<img class="${cls}" src="${esc(url)}" alt="" loading="lazy">` : fallback);
+
+function worldNav(lang, world) {
+  const link = (w, key) => `<a href="${WORLD_PATH[w]}?lang=${lang}" ${w === world ? 'aria-current="page"' : ''}>${esc(t(lang, key))}</a>`;
+  return `<nav class="worldnav" aria-label="Nobat">${link('all', 'homeLink')}${link('clinic', 'doctorsTab')}${link('salon', 'salonsTab')}</nav>`;
+}
+
+function worldDoor(lang, cls, href, pic, title, lede) {
+  return `<a class="world-card ${cls}" href="${href}"><span class="world-pic">${pic}</span>
+    <span class="world-text"><b>${esc(t(lang, title))}</b><span>${esc(t(lang, lede))}</span><span class="btn primary">${esc(t(lang, 'explore'))}</span></span></a>`;
+}
+
+export function directoryPage(lang, categories, { world = 'all', photos = {}, cat = '' } = {}) {
+  const path = WORLD_PATH[world] || '/';
+  const H = {
+    all: { title: 'heroTitle', lede: 'heroLede', ph: 'findPh', trust: ['trust1', 'trust2', 'trust3'], art: HERO_ART },
+    clinic: { title: 'clinicsHeroTitle', lede: 'clinicsHeroLede', ph: 'clinicsPh', trust: ['trust1', 'trust2', 'trust3'], art: photoOr(photos.clinics_hero, HERO_ART) },
+    salon: { title: 'beautyHeroTitle', lede: 'beautyHeroLede', ph: 'beautyPh', trust: ['beautyTrust1', 'trust2', 'beautyTrust3'], art: photoOr(photos.beauty_hero, BEAUTY_ART) }
+  }[world];
+  const doors = world === 'all' ? `<section class="worlds">
+      ${worldDoor(lang, 'clinic', `/clinics?lang=${lang}`, photoOr(photos.clinics_hero, slice(HERO_ART), ''), 'clinicsWorld', 'clinicsWorldLede')}
+      ${worldDoor(lang, 'beauty', `/beauty?lang=${lang}`, photoOr(photos.beauty_salon || photos.beauty_hero, slice(BEAUTY_ART), ''), 'beautyWorld', 'beautyWorldLede')}
+      ${worldDoor(lang, 'beauty spa', `/beauty?cat=spa&lang=${lang}`, photoOr(photos.beauty_spa, MOOD_ART.spa, ''), 'spaWorld', 'spaWorldLede')}
+    </section>` : '';
+  const moods = world === 'salon' ? `<section class="moods">${[
+    ['barber_men', 'beauty_barber', 'barbersCard', 'barbersLine'],
+    ['spa', 'beauty_spa', 'spaCard', 'spaLine'],
+    ['salon_women', 'beauty_salon', 'salonsCard', 'salonsLine']
+  ].map(([key, photo, title, line]) => `<button type="button" class="mood" data-cat="${key}" aria-pressed="${cat === key}">
+      <span class="mood-pic">${photoOr(photos[photo], MOOD_ART[key], '')}</span>
+      <span class="mood-text"><b>${esc(t(lang, title))}</b><span>${esc(t(lang, line))}</span></span></button>`).join('')}</section>` : '';
   const body = `<header class="top"><div class="wrap row">
-    <a class="brand" href="/?lang=${lang}">${LOGO}<span><b>Nobat</b><small>${esc(t(lang, 'findTitle'))}</small></span></a>
-    ${langSwitch(lang, '/')}</div></header>
+    <a class="brand" href="/?lang=${lang}">${LOGO}<span><b>Nobat</b><small>${esc(t(lang, world === 'salon' ? 'beautyWorld' : world === 'clinic' ? 'clinicsWorld' : 'findTitle'))}</small></span></a>
+    ${worldNav(lang, world)}
+    ${langSwitch(lang, path)}</div></header>
   <main class="wrap stack">
     <section class="hero-band">
       <div>
-        <h1>${esc(t(lang, 'heroTitle'))}</h1>
-        <p class="lede">${esc(t(lang, 'heroLede'))}</p>
+        <h1>${esc(t(lang, H.title))}</h1>
+        <p class="lede">${esc(t(lang, H.lede))}</p>
         <form class="search stack" id="searchForm" role="search">
-          <div class="searchrow"><input id="q" type="search" placeholder="${esc(t(lang, 'findPh'))}" autocomplete="off" aria-label="${esc(t(lang, 'search'))}">
+          <div class="searchrow"><input id="q" type="search" placeholder="${esc(t(lang, H.ph))}" autocomplete="off" aria-label="${esc(t(lang, 'search'))}">
             <button class="btn primary">${esc(t(lang, 'search'))}</button>
             <button type="button" class="btn ghost" id="near">📍 ${esc(t(lang, 'nearMe'))}</button></div>
           <p class="muted small" id="status" role="status"></p>
         </form>
-        <div class="trust"><span>${esc(t(lang, 'trust1'))}</span><span>${esc(t(lang, 'trust2'))}</span><span>${esc(t(lang, 'trust3'))}</span></div>
+        <div class="trust">${H.trust.map((k) => `<span>${esc(t(lang, k))}</span>`).join('')}</div>
       </div>
-      ${HERO_ART}
+      ${H.art}
     </section>
+    ${doors}${moods}
     <div class="section-title"><h2>${esc(t(lang, 'browseTitle'))}</h2>
-      <div class="kindtabs" role="group"><button type="button" class="chip" data-kind="" aria-pressed="true">${esc(t(lang, 'all'))}</button><button type="button" class="chip" data-kind="clinic" aria-pressed="false">${esc(t(lang, 'doctorsTab'))}</button><button type="button" class="chip" data-kind="salon" aria-pressed="false">${esc(t(lang, 'salonsTab'))}</button></div></div>
+      ${world === 'all' ? `<div class="kindtabs" role="group"><button type="button" class="chip" data-kind="" aria-pressed="true">${esc(t(lang, 'all'))}</button><button type="button" class="chip" data-kind="clinic" aria-pressed="false">${esc(t(lang, 'doctorsTab'))}</button><button type="button" class="chip" data-kind="salon" aria-pressed="false">${esc(t(lang, 'salonsTab'))}</button></div>` : ''}</div>
     <div class="cat-grid" id="cats"></div>
-    <div class="row"><div class="viewtabs" role="group"><button type="button" class="chip" data-view="list" aria-pressed="true">${esc(t(lang, 'listView'))}</button><button type="button" class="chip" data-view="map" aria-pressed="false">${esc(t(lang, 'mapView'))}</button></div></div>
+    <div class="section-title"><h2>${esc(t(lang, 'resultsTitle'))}</h2><div class="viewtabs" role="group"><button type="button" class="chip" data-view="list" aria-pressed="true">${esc(t(lang, 'listView'))}</button><button type="button" class="chip" data-view="map" aria-pressed="false">${esc(t(lang, 'mapView'))}</button></div></div>
     <div id="map" class="map" hidden></div>
     <div id="results" class="stack"></div>
     <p class="foot"><a href="/login">${esc(t(lang, 'staffSignIn'))}</a></p>
   </main>`;
+  const shown = world === 'all' ? categories : categories.filter((c) => c.kind === world);
   return page({
-    title: 'Nobat', lang, body, script: ['vendor/leaflet/leaflet.js', 'search.js'], head: '<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">',
-    data: { lang, categories, icons: CATEGORY_ICONS, t: dictFor(lang), catNames: Object.fromEntries(categories.map((c) => [c.key, c.name])) }
+    title: world === 'all' ? 'Nobat' : `${t(lang, world === 'salon' ? 'beautyWorld' : 'clinicsWorld')} · Nobat`, lang, body, bodyClass: world === 'salon' ? 'beauty' : '',
+    script: ['vendor/leaflet/leaflet.js', 'search.js'], head: '<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">',
+    data: { lang, kind: world === 'all' ? '' : world, cat, categories: shown, icons: CATEGORY_ICONS, t: dictFor(lang), catNames: Object.fromEntries(categories.map((c) => [c.key, c.name])) }
   });
 }
 
-function cover(clinic, lang, rating) {
-  return `<section class="cover"><span class="av">${initials(clinic.name)}</span><div>
+function cover(clinic, lang, rating, photos) {
+  const pic = photos && photos.cover;
+  return `<section class="cover${pic ? ' has-photo' : ''}">${pic ? `<img class="cover-img" src="${esc(pic.url)}" alt="">` : ''}
+    <div class="cover-body"><span class="av">${initials(clinic.name)}</span><div>
     <h1>${esc(clinic.name)}</h1><p>${esc([clinic.address, clinic.city].filter(Boolean).join(', '))}</p>
-    ${rating && rating.count ? `<span class="rating-chip">★ ${rating.overall.toFixed(1)} · ${esc(rating.count === 1 ? t(lang, 'oneReview') : t(lang, 'nReviews', { n: rating.count }))}</span>` : ''}</div></section>`;
+    ${rating && rating.count ? `<span class="rating-chip">★ ${rating.overall.toFixed(1)} · ${esc(rating.count === 1 ? t(lang, 'oneReview') : t(lang, 'nReviews', { n: rating.count }))}</span>` : ''}</div></div></section>`;
 }
 
-export function clinicPage(clinic, doctors, lang, reviews = '', rating = null) {
+// About text and photo gallery a clinic or salon added in Settings.
+function aboutAndGallery(clinic, lang, photos) {
+  const about = clinic.about ? `<section class="card stack about"><h2>${esc(t(lang, 'aboutTitle'))}</h2><p>${esc(clinic.about)}</p></section>` : '';
+  const gallery = photos && photos.gallery.length ? `<section class="stack"><h2>${esc(t(lang, 'photosTitle'))}</h2><div class="gallery">${photos.gallery.map((p) =>
+    `<a href="${esc(p.url)}" target="_blank" rel="noopener"><img src="${esc(p.url)}" alt="" loading="lazy"></a>`).join('')}</div></section>` : '';
+  return about + gallery;
+}
+
+export function clinicPage(clinic, doctors, lang, reviews = '', rating = null, photos = null) {
   const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}`)}
   <main class="wrap stack">
-    ${cover(clinic, lang, rating)}
+    ${cover(clinic, lang, rating, photos)}
     <h2>${esc(t(lang, 'chooseDoctor'))}</h2>
     <div class="cards">${doctors.map((d) => `
       <a class="card doc" href="/c/${esc(clinic.slug)}/d/${d.id}?lang=${lang}">
@@ -112,6 +159,7 @@ export function clinicPage(clinic, doctors, lang, reviews = '', rating = null) {
         <span class="fee">${esc(t(lang, 'fee'))}: ${iqd(d.fee_iqd)} ${esc(t(lang, 'iqd'))}</span></span>
       </a>`).join('') || '<p class="muted">—</p>'}
     </div>
+    ${aboutAndGallery(clinic, lang, photos)}
     ${reviews}
     <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
   </main>`;
@@ -151,10 +199,11 @@ function contactForm(lang, choose) {
     </form>`;
 }
 
-export function salonPage(clinic, staff, services, lang, dev, choose, reviews = '', rating = null) {
+export function salonPage(clinic, staff, services, lang, dev, choose, reviews = '', rating = null, photos = null) {
   const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}`)}
   <main class="wrap narrow stack">
-    ${cover(clinic, lang, rating)}
+    ${cover(clinic, lang, rating, photos)}
+    ${aboutAndGallery(clinic, lang, photos)}
     <section class="card stack">
       <h2>1. ${esc(t(lang, 'chooseServices'))}</h2>
       <div class="svcs" id="svcs">${services.map((s) => `
@@ -175,7 +224,7 @@ export function salonPage(clinic, staff, services, lang, dev, choose, reviews = 
     ${reviews}
     <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
   </main>`;
-  return page({ title: clinic.name, lang, body, manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name, script: 'salon-book.js', data: { lang, dev, clinicId: clinic.id, t: dictFor(lang) } });
+  return page({ title: clinic.name, lang, body, bodyClass: 'beauty', manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name, script: 'salon-book.js', data: { lang, dev, clinicId: clinic.id, t: dictFor(lang) } });
 }
 
 export function unavailablePage(clinic, lang) {
@@ -289,7 +338,7 @@ export function staffReviewsPage(user, clinic, summary, points, reviews) {
 }
 
 export function settingsPage(user, clinic) {
-  return staffPage(user, clinic, '/app/settings', 'Settings', () => '<main class="wrap stack" id="settings"></main>', 'settings.js');
+  return staffPage(user, clinic, '/app/settings', 'Settings', () => '<main class="wrap stack" id="settings"></main>', ['photo-upload.js', 'settings.js']);
 }
 
 export function patientsPage(user, clinic) {

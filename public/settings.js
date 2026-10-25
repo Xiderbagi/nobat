@@ -28,12 +28,13 @@
     return el('form', { class: 'card stack', onsubmit: (e) => {
       e.preventDefault();
       save('/api/s/clinic', 'PUT', { name: val('c_name').value, city: val('c_city').value, address: val('c_address').value, phone: val('c_phone').value,
-        lat: val('c_lat').value, lng: val('c_lng').value, listed: val('c_listed').checked, tags: [...root.querySelectorAll('.c_tag:checked')].map((i) => i.value) });
+        lat: val('c_lat').value, lng: val('c_lng').value, about: val('c_about').value, listed: val('c_listed').checked, tags: [...root.querySelectorAll('.c_tag:checked')].map((i) => i.value) });
     } },
       el('h2', {}, tr('clinicSection')),
       el('div', { class: 'grid2' }, field(tr('cName'), input('c_name', c.name, { maxlength: 80 })), field(tr('cCity'), input('c_city', c.city, { maxlength: 40 })),
         field(tr('cAddress'), input('c_address', c.address, { maxlength: 120 })), field(tr('cPhone'), input('c_phone', c.phone, { maxlength: 20, dir: 'ltr' }))),
       el('p', { class: 'muted small' }, tr('bookHere'), ' ', el('a', { href: `/c/${c.slug}`, target: '_blank', rel: 'noopener', dir: 'ltr' }, url), '. ', tr('qrHint'), ' ', el('a', { href: '/app/poster' }, tr('poster'))),
+      field(tr('about'), el('textarea', { id: 'c_about', rows: 4, maxlength: 1500 }, c.about || ''), tr('aboutHint')),
       el('h3', {}, tr('findSection')),
       el('label', { class: 'check' }, el('input', { type: 'checkbox', id: 'c_listed', checked: c.listed !== 0 }), tr('listedLabel')),
       tagBoxes,
@@ -89,6 +90,38 @@
       el('button', { class: 'btn primary' }, d.id ? tr('save') : tr('add')));
   }
 
+  // Cover photo and gallery. Each upload re-renders this card only, so unsaved form text elsewhere is kept.
+  function photosCard() {
+    const card = el('section', { class: 'card stack', id: 'photosCard' });
+    const pick = (kind, multiple) => {
+      const input = el('input', { type: 'file', accept: 'image/*', hidden: true, multiple });
+      input.addEventListener('change', async () => {
+        const files = [...input.files];
+        input.value = '';
+        for (const f of files) {
+          toast(tr('uploading'));
+          try { S.photos = (await window.uploadPhoto(f, `/api/s/photos?kind=${kind}`)).photos; toast(tr('photoSaved')); }
+          catch (e) { toast(tr(e.code === 'photoLimit' ? 'photoLimit' : 'photoBad')); break; }
+        }
+        card.replaceWith(photosCard());
+      });
+      return input;
+    };
+    const remove = (id) => async () => {
+      try { S.photos = (await api(`/api/s/photos/${id}`, 'DELETE')).photos; document.getElementById('photosCard').replaceWith(photosCard()); } catch (e) { toast(e.message); }
+    };
+    const cover = S.photos.cover;
+    card.append(
+      el('h2', {}, tr('photosTitle')), el('p', { class: 'muted small' }, tr('photosHint')),
+      el('h3', {}, tr('coverPhoto')),
+      cover ? el('div', { class: 'thumb cover-thumb' }, el('img', { src: cover.url, alt: '' }), el('button', { type: 'button', class: 'btn ghost small', onclick: remove(cover.id) }, tr('removePhoto'))) : null,
+      el('label', { class: 'btn ghost' }, tr('choosePhoto'), pick('cover', false)),
+      el('h3', {}, `${tr('galleryTitle')} (${S.photos.gallery.length}/${S.galleryLimit})`),
+      el('div', { class: 'thumbs' }, S.photos.gallery.map((p) => el('div', { class: 'thumb' }, el('img', { src: p.url, alt: '' }), el('button', { type: 'button', class: 'btn ghost small', onclick: remove(p.id) }, tr('removePhoto'))))),
+      S.photos.gallery.length < S.galleryLimit ? el('label', { class: 'btn ghost' }, tr('addPhotos'), pick('gallery', true)) : null);
+    return card;
+  }
+
   function servicesCard() {
     const row = (s) => {
       const p = `s${s.id || 'new'}_`;
@@ -129,7 +162,7 @@
   function render() {
     const blank = { id: null, name: '', specialty: '', fee_iqd: 25000, mode: 'queue', slot_minutes: 15, avg_minutes: 10, daily_limit: 40, active: 1,
       schedules: [6, 0, 1, 2, 3, 4].map((wd) => ({ weekday: wd, start_time: salon ? '10:00' : '16:00', end_time: salon ? '20:00' : '21:00' })) };
-    root.replaceChildren(...[el('h1', {}, tr('settings')), clinicForm(), salon ? servicesCard() : null,
+    root.replaceChildren(...[el('h1', {}, tr('settings')), clinicForm(), photosCard(), salon ? servicesCard() : null,
       el('h2', { class: 'section' }, tr('providers')), ...S.doctors.map(doctorForm), doctorForm(blank), usersCard()].filter(Boolean));
   }
 

@@ -6,6 +6,7 @@ import { tx } from './db.js';
 import { createClinic, ClinicError, tempPassword } from './clinics.js';
 import { addDays, checkSecret, esc, hashSecret, isIsoDate, localParts, token } from './util.js';
 import { page, posterPage } from './views.js';
+import { MAX_BYTES, SITE_PHOTO_KEYS, isJpeg, removeFile, saveJpeg, sitePhotos } from './uploads.js';
 
 const COOKIE = 'nobat_admin';
 const SESSION_DAYS = 14;
@@ -21,7 +22,7 @@ const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect wid
 function shell(admin, title, main, notice) {
   const body = `<header class="top"><div class="wrap row">
     <a class="brand" href="/admin">${LOGO}<span><b>Nobat admin</b><small>${esc(admin.name)}</small></span></a>
-    <nav class="tabs"><a href="/admin">Clinics</a><a href="/admin/clinics/new">+ Add clinic</a></nav>
+    <nav class="tabs"><a href="/admin">Clinics</a><a href="/admin/clinics/new">+ Add clinic</a><a href="/admin/photos">Website photos</a></nav>
     <form method="post" action="/admin/logout"><button class="btn ghost small">Sign out</button></form></div></header>
   <main class="wrap stack">${notice ? `<p class="note ok" role="status">${esc(notice)}</p>` : ''}${main}</main>`;
   return page({ title: `${title} · Nobat admin`, body, manifest: '/manifest.webmanifest' });
@@ -40,7 +41,7 @@ export function clinicState(c, today) {
   return { label: `Paid until ${c.paid_until}`, cls: 'good', alert: false };
 }
 
-export function adminRouter(db, { baseUrl, secure }) {
+export function adminRouter(db, { baseUrl, secure, uploads }) {
   const r = express.Router();
   r.use(express.urlencoded({ extended: false, limit: '20kb' }));
 
@@ -346,6 +347,35 @@ export function adminRouter(db, { baseUrl, secure }) {
       db.prepare('DELETE FROM sessions WHERE user_id = ?').run(u.id);
     });
     clinicPage(req, res, getClinic(u.clinic_id), `New password for ${u.email}: ${pass}. Give it to them now; it isn't shown again.`);
+  });
+
+  // ---------- Photos for the website's own pages ----------
+  const SITE_PHOTO_INFO = {
+    clinics_hero: ['Doctors and clinics page', 'Big photo at the top of the clinics page. A bright, friendly clinic or doctor with a patient.'],
+    beauty_hero: ['Salons and spa page', 'Big photo at the top of the salons page. Calm and natural: plants, soft light, a spa or salon.'],
+    beauty_barber: ['Barbers', 'Photo for the "Barbers" card on the salons page.'],
+    beauty_spa: ['Nails and spa', 'Photo for the "Nails and spa" card.'],
+    beauty_salon: ["Women's salons", 'Photo for the "Women\'s salons" card.']
+  };
+  r.get('/photos', (req, res) => {
+    const photos = sitePhotos(db);
+    const main = `<h1>Website photos</h1>
+      <p class="muted">These photos appear on the public pages. Use photos you own or free ones (for example from unsplash.com or pexels.com). Wide photos look best. Until you add one, the page shows a drawing.</p>
+      <div class="photo-admin">${SITE_PHOTO_KEYS.map((k) => `<section class="card stack">
+        <h2>${esc(SITE_PHOTO_INFO[k][0])}</h2><p class="muted small">${esc(SITE_PHOTO_INFO[k][1])}</p>
+        ${photos[k] ? `<img src="${esc(photos[k])}" alt="" class="photo-preview">` : '<div class="photo-empty">No photo yet</div>'}
+        <label class="btn ghost">Choose photo<input type="file" accept="image/*" data-site-photo="${k}" hidden></label>
+        <p class="muted small" data-status="${k}" role="status"></p></section>`).join('')}</div>`;
+    res.send(shell(req.admin, 'Website photos', main).replace('</body>', '<script src="/static/photo-upload.js" defer></script><script src="/static/admin-photos.js" defer></script></body>'));
+  });
+  r.post('/photos/:key', express.raw({ type: 'image/jpeg', limit: MAX_BYTES }), (req, res) => {
+    if (!SITE_PHOTO_KEYS.includes(req.params.key)) return res.status(404).json({ error: 'Unknown photo.' });
+    if (!isJpeg(req.body)) return res.status(400).json({ error: 'That file is not a photo we can use. Try a JPG or PNG.' });
+    const old = db.prepare('SELECT file FROM site_photos WHERE key = ?').get(req.params.key);
+    const name = saveJpeg(uploads, req.body);
+    db.prepare("INSERT INTO site_photos (key, file) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET file = excluded.file, updated_at = datetime('now')").run(req.params.key, name);
+    if (old) removeFile(uploads, old.file);
+    res.json({ ok: true, url: `/uploads/${name}` });
   });
 
   r.get('/clinics/:id/poster', async (req, res, next) => {

@@ -17,13 +17,14 @@ import * as views from './views.js';
 import { adminRouter } from './admin.js';
 import { search, categoriesFor, ratingSummary, reviewPoints } from './directory.js';
 import { isCategory } from './categories.js';
+import { GALLERY_LIMIT, MAX_BYTES, clinicPhotos, isJpeg, isSafeName, removeFile, saveJpeg, sitePhotos, uploadsDir } from './uploads.js';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const OTP_TTL = 10 * 60 * 1000;
 const OTP_MAX_SENDS = 3;
 const LANG_COOKIE = /(?:^|;\s*)nobat_lang=(\w+)/;
 
-export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localhost:3000', dev = process.env.NODE_ENV !== 'production' } = {}) {
+export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localhost:3000', dev = process.env.NODE_ENV !== 'production', uploads = uploadsDir(process.env.DB_FILE || join(ROOT, 'data', 'nobat.db')) } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -41,7 +42,12 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
   app.use('/static/vendor/vazirmatn', express.static(join(ROOT, 'node_modules', '@fontsource-variable', 'vazirmatn'), { maxAge: '30d' }));
   app.use('/static/vendor/leaflet', express.static(join(ROOT, 'node_modules', 'leaflet', 'dist'), { maxAge: '7d' }));
   app.use('/static', express.static(join(ROOT, 'public'), { maxAge: dev ? 0 : '1h' }));
-  app.use('/admin', adminRouter(db, { baseUrl, secure: baseUrl.startsWith('https') }));
+  // Uploaded photos. Names are random, so a photo never changes once saved.
+  app.get('/uploads/:name', (req, res) => {
+    if (!isSafeName(req.params.name)) return res.status(404).end();
+    res.sendFile(join(uploads, req.params.name), { maxAge: '365d', immutable: true }, (err) => { if (err && !res.headersSent) res.status(404).end(); });
+  });
+  app.use('/admin', adminRouter(db, { baseUrl, secure: baseUrl.startsWith('https'), uploads }));
   app.use(loadUser(db));
 
   const cookieLang = (req) => LANG_COOKIE.exec(req.headers.cookie || '')?.[1];
@@ -93,10 +99,17 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
 
   // ---------- Patient / customer pages ----------
   // Home page: search for clinics and salons.
-  app.get('/', (req, res) => {
+  // The home page has doors to two separate worlds: /clinics, and /beauty for salons, barbers and spa.
+  const worldPage = (world) => (req, res) => {
     const lang = langOf(req); rememberLang(req, res, lang);
-    res.send(views.directoryPage(lang, categoriesFor(lang)));
-  });
+    const cats = categoriesFor(lang);
+    const cat = cats.some((c) => c.key === req.query.cat && (world === 'all' || c.kind === world)) ? req.query.cat : '';
+    res.send(views.directoryPage(lang, cats, { world, photos: sitePhotos(db), cat }));
+  };
+  app.get('/', worldPage('all'));
+  app.get('/clinics', worldPage('clinic'));
+  app.get('/beauty', worldPage('salon'));
+  app.get(['/salons', '/spa'], (req, res) => res.redirect(req.path === '/spa' ? '/beauty?cat=spa' : '/beauty'));
 
   app.get('/api/p/search', (req, res) => {
     const num = (v) => (v === undefined || v === '' ? null : Number(v));
@@ -118,8 +131,9 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const lang = langOf(req); rememberLang(req, res, lang);
     if (clinic.status === 'off') return unavailable(res, clinic, lang);
     const staff = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? AND active = 1 ORDER BY name').all(clinic.id);
-    if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev, canChooseChannel(), reviewsHtml(clinic, lang), ratingSummary(db, clinic.id)));
-    res.send(views.clinicPage(clinic, staff, lang, reviewsHtml(clinic, lang), ratingSummary(db, clinic.id)));
+    const photos = clinicPhotos(db, clinic.id);
+    if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev, canChooseChannel(), reviewsHtml(clinic, lang), ratingSummary(db, clinic.id), photos));
+    res.send(views.clinicPage(clinic, staff, lang, reviewsHtml(clinic, lang), ratingSummary(db, clinic.id), photos));
   });
 
   app.get('/c/:slug/d/:id', (req, res) => {
@@ -459,13 +473,13 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
 
   // ---------- Owner settings ----------
   api.get('/settings', requireOwner, (req, res) => {
-    const clinic = db.prepare('SELECT id, name, slug, city, address, phone, kind, lat, lng, tags, listed FROM clinics WHERE id = ?').get(req.user.clinic_id);
+    const clinic = db.prepare('SELECT id, name, slug, city, address, phone, kind, lat, lng, tags, listed, about FROM clinics WHERE id = ?').get(req.user.clinic_id);
     const doctors = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? ORDER BY active DESC, name').all(clinic.id)
       .map((d) => ({ ...d, schedules: db.prepare('SELECT weekday, start_time, end_time FROM schedules WHERE doctor_id = ? ORDER BY weekday, start_time').all(d.id),
         serviceIds: db.prepare('SELECT service_id FROM staff_services WHERE doctor_id = ?').all(d.id).map((r) => r.service_id) }));
     const users = db.prepare('SELECT id, name, email, role, doctor_id FROM users WHERE clinic_id = ? ORDER BY role, name').all(clinic.id);
     const services = db.prepare('SELECT * FROM services WHERE clinic_id = ? ORDER BY active DESC, name').all(clinic.id);
-    res.json({ clinic, doctors, users, services, baseUrl, categories: categoriesFor(req.user.lang).filter((c) => c.kind === clinic.kind) });
+    res.json({ clinic, doctors, users, services, baseUrl, photos: clinicPhotos(db, clinic.id), galleryLimit: GALLERY_LIMIT, categories: categoriesFor(req.user.lang).filter((c) => c.kind === clinic.kind) });
   });
 
   api.put('/clinic', requireOwner, (req, res) => {
@@ -474,8 +488,8 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const lat = Number(req.body.lat), lng = Number(req.body.lng);
     const hasPlace = req.body.lat !== '' && req.body.lat != null && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
     const tags = (Array.isArray(req.body.tags) ? req.body.tags : []).filter(isCategory).slice(0, 8).join(',');
-    db.prepare('UPDATE clinics SET name = ?, city = ?, address = ?, phone = ?, lat = ?, lng = ?, tags = ?, listed = ? WHERE id = ?')
-      .run(f('name', 80), f('city', 40), f('address', 120), f('phone', 20), hasPlace ? lat : null, hasPlace ? lng : null, tags, req.body.listed === false ? 0 : 1, req.user.clinic_id);
+    db.prepare('UPDATE clinics SET name = ?, city = ?, address = ?, phone = ?, lat = ?, lng = ?, tags = ?, listed = ?, about = ? WHERE id = ?')
+      .run(f('name', 80), f('city', 40), f('address', 120), f('phone', 20), hasPlace ? lat : null, hasPlace ? lng : null, tags, req.body.listed === false ? 0 : 1, String(req.body.about || '').trim().slice(0, 1500), req.user.clinic_id);
     res.json({ ok: true });
   });
 
@@ -514,6 +528,30 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
       return doctorId;
     });
     res.json({ id });
+  });
+
+  // Photos: one cover and up to 12 gallery photos. The browser sends a resized JPEG.
+  api.post('/photos', requireOwner, express.raw({ type: 'image/jpeg', limit: MAX_BYTES }), (req, res) => {
+    const kind = req.query.kind === 'cover' ? 'cover' : 'gallery';
+    if (!isJpeg(req.body)) return res.status(400).json({ error: 'photoBad' });
+    const cid = req.user.clinic_id;
+    if (kind === 'gallery' && db.prepare("SELECT COUNT(*) AS n FROM photos WHERE clinic_id = ? AND kind = 'gallery'").get(cid).n >= GALLERY_LIMIT) return res.status(409).json({ error: 'photoLimit' });
+    const name = saveJpeg(uploads, req.body);
+    const old = kind === 'cover' ? db.prepare("SELECT id, file FROM photos WHERE clinic_id = ? AND kind = 'cover'").all(cid) : [];
+    tx(db, () => {
+      for (const o of old) db.prepare('DELETE FROM photos WHERE id = ?').run(o.id);
+      db.prepare('INSERT INTO photos (clinic_id, file, kind) VALUES (?, ?, ?)').run(cid, name, kind);
+    });
+    for (const o of old) removeFile(uploads, o.file);
+    res.json({ ok: true, photos: clinicPhotos(db, cid) });
+  });
+
+  api.delete('/photos/:id', requireOwner, (req, res) => {
+    const p = db.prepare('SELECT * FROM photos WHERE id = ? AND clinic_id = ?').get(Number(req.params.id), req.user.clinic_id);
+    if (!p) return res.status(404).json({ error: 'errGeneric' });
+    db.prepare('DELETE FROM photos WHERE id = ?').run(p.id);
+    removeFile(uploads, p.file);
+    res.json({ ok: true, photos: clinicPhotos(db, req.user.clinic_id) });
   });
 
   api.post('/services', requireOwner, (req, res) => {

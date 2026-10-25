@@ -2,7 +2,9 @@
   const D = JSON.parse(document.getElementById('data').textContent);
   const T = D.t;
   const $ = (id) => document.getElementById(id);
-  const state = { q: '', cat: '', kind: '', lat: null, lng: null, view: 'list', results: [] };
+  const state = { q: '', cat: D.cat || '', kind: D.kind || '', lat: null, lng: null, view: 'list', results: [] };
+  const accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#0b8f7a';
+  const smooth = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
   let map = null;
   let layer = null;
 
@@ -19,7 +21,15 @@
   const stars = (v) => '★'.repeat(Math.round(v || 0)) + '☆'.repeat(5 - Math.round(v || 0));
   const bookUrl = (r, d) => (r.kind === 'clinic' && d ? `/c/${r.slug}/d/${d.id}` : `/c/${r.slug}`) + `?lang=${D.lang}`;
 
+  // Choosing a category (a tile, or one of the Barbers / Spa / Women's salons cards) toggles it and shows the results.
+  function pickCat(key) {
+    state.cat = state.cat === key ? '' : key;
+    renderCats(); load();
+    $('results').scrollIntoView({ behavior: smooth(), block: 'start' });
+  }
+
   function renderCats() {
+    document.querySelectorAll('.mood').forEach((b) => b.setAttribute('aria-pressed', String(state.cat === b.dataset.cat)));
     const cats = D.categories.filter((c) => !state.kind || c.kind === state.kind);
     $('cats').replaceChildren(...cats.map((c) => {
       const icon = D.icons[c.key] || { tone: 'teal', svg: '' };
@@ -27,7 +37,7 @@
       ic.innerHTML = icon.svg; // our own fixed icons
       return el('button', {
         type: 'button', class: 'cat-tile', 'aria-pressed': String(state.cat === c.key),
-        onclick: () => { state.cat = state.cat === c.key ? '' : c.key; renderCats(); load(); $('results').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }
+        onclick: () => pickCat(c.key)
       }, ic, c.name);
     }));
   }
@@ -36,6 +46,7 @@
     const meta = [r.kind === 'salon' ? T.salonsTab : null, [r.address, r.city].filter(Boolean).join(', '), r.distanceKm != null ? tr('kmAway', { km: r.distanceKm }) : null].filter(Boolean).join(' · ');
     const initials = r.name.split(/\s+/).map((w) => w[0] || '').join('').slice(0, 2);
     return el('article', { class: 'card result' + (r.featured ? ' featured' : '') },
+      r.photo ? el('a', { href: bookUrl(r), class: 'result-photo', tabindex: '-1', 'aria-hidden': 'true' }, el('img', { src: r.photo, alt: '', loading: 'lazy' })) : null,
       el('div', { class: 'head' },
         el('span', { class: `av ${r.tone}` }, initials),
         el('div', { class: 'grow' },
@@ -67,11 +78,11 @@
     const pts = [];
     for (const r of state.results.filter((x) => x.lat != null)) {
       const popup = el('div', { class: 'pop' }, el('b', {}, r.name), el('br'), r.rating.count ? `${stars(r.rating.overall)} ` : '', el('br'), el('a', { href: bookUrl(r) }, T.bookBtn));
-      L.circleMarker([r.lat, r.lng], { radius: r.featured ? 11 : 8, color: '#ffffff', weight: 2, fillColor: r.featured ? '#d9573a' : '#1f5fbf', fillOpacity: 1 }).bindPopup(popup).addTo(layer);
+      L.circleMarker([r.lat, r.lng], { radius: r.featured ? 11 : 8, color: '#ffffff', weight: 2, fillColor: r.featured ? '#d9573a' : accent, fillOpacity: 1 }).bindPopup(popup).addTo(layer);
       pts.push([r.lat, r.lng]);
     }
     if (state.lat != null) {
-      L.circleMarker([state.lat, state.lng], { radius: 7, color: '#1f5fbf', weight: 3, fillColor: '#ffffff', fillOpacity: 1 }).addTo(layer);
+      L.circleMarker([state.lat, state.lng], { radius: 7, color: accent, weight: 3, fillColor: '#ffffff', fillOpacity: 1 }).addTo(layer);
       pts.push([state.lat, state.lng]);
     }
     if (pts.length) map.fitBounds(pts, { padding: [30, 30], maxZoom: 14 });
@@ -107,6 +118,7 @@
     document.querySelectorAll('.viewtabs .chip').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     render();
   }));
+  document.querySelectorAll('.mood').forEach((b) => b.addEventListener('click', () => pickCat(b.dataset.cat)));
   $('near').addEventListener('click', () => {
     if (!navigator.geolocation) { $('status').textContent = T.locDenied; return; }
     $('status').textContent = T.locating;

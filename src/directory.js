@@ -2,6 +2,7 @@
 import { CATEGORIES, categoriesForText, fold, isCategory, REVIEW_POINTS } from './categories.js';
 import { localParts } from './util.js';
 import { avatarTone } from './icons.js';
+import { photoUrl } from './uploads.js';
 
 // Distance in km between two points on Earth.
 export function distanceKm(lat1, lng1, lat2, lng2) {
@@ -28,6 +29,7 @@ export function search(db, { q = '', cat = '', lat = null, lng = null, kind = ''
 
   const clinics = db.prepare("SELECT * FROM clinics WHERE status != 'off' AND listed = 1").all();
   const doctorsOf = db.prepare('SELECT id, name, specialty, category, fee_iqd FROM doctors WHERE clinic_id = ? AND active = 1 ORDER BY name');
+  const coverOf = db.prepare("SELECT file FROM photos WHERE clinic_id = ? AND kind = 'cover' ORDER BY id DESC LIMIT 1");
   const results = [];
 
   for (const c of clinics) {
@@ -59,7 +61,7 @@ export function search(db, { q = '', cat = '', lat = null, lng = null, kind = ''
     results.push({
       id: c.id, slug: c.slug, name: c.name, kind: c.kind, city: c.city, address: c.address, tone: avatarTone(c.name),
       lat: c.lat, lng: c.lng, distanceKm: dist == null ? null : Math.round(dist * 10) / 10,
-      featured: isFeatured(c, today), categories: [...cats], score,
+      featured: isFeatured(c, today), categories: [...cats], score, photo: photoUrl(coverOf.get(c.id)?.file),
       rating: ratingSummary(db, c.id),
       doctors: matched.slice(0, 4).map((d) => ({ id: d.id, name: d.name, specialty: d.specialty, category: d.category, fee: d.fee_iqd }))
     });
