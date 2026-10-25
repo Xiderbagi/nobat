@@ -466,9 +466,16 @@ body.beauty .av { filter: saturate(.55); }
 .door.clinic .door-ic { background: rgb(11 143 122 / .55); }
 .door.salon .door-ic { background: rgb(181 103 77 / .55); }
 .door.spa .door-ic { background: rgb(95 127 99 / .6); }
+/* Phones: still three side by side, narrower and tall, with smaller text */
 @media (max-width: 720px) {
-  .doors { grid-template-columns: minmax(0, 1fr); }
-  .door { height: 34vh; min-height: 210px; border-radius: 24px; }
+  .doors { gap: 8px; }
+  .door { height: calc(100svh - 190px); min-height: 380px; max-height: 620px; border-radius: 20px; }
+  .door-text { padding: 14px 10px; gap: 6px; }
+  .door-text b { font-size: clamp(14px, 4.3vw, 22px); }
+  .door-text > span:last-child { font-size: 12px; line-height: 1.35; }
+  .door-ic { width: 36px; height: 36px; border-radius: 12px; }
+  .door-ic svg { width: 20px; height: 20px; }
+  .door::before { background: linear-gradient(180deg, rgb(0 0 0 / .66) 0%, rgb(0 0 0 / .3) 40%, rgb(0 0 0 / 0) 62%); }
 }
 @media (prefers-reduced-motion: reduce) { .door, .door-pic { transition: none; } }
 
