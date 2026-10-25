@@ -40,7 +40,21 @@ npm start                         # open http://localhost:3000/login
 
 Until WhatsApp or SMS is set up, nothing is actually sent. Messages are printed in the terminal and listed under **Messages**. In this test mode, the booking page also shows the SMS code on screen.
 
-## Add a real clinic or salon
+## Your admin screen
+
+Add clinics, see how each is doing, record payments, reset passwords and switch clinics off and on, all at `your-address/admin`.
+
+Create your admin account once (in the Render Shell, or on your computer):
+
+```bash
+npm run create-admin -- --name "Your Name" --email you@example.com --password "a-long-password"
+```
+
+Run the same command again to change your admin password. Clinic staff can't open the admin screen.
+
+When a clinic is **switched off**, its staff can't sign in, patients see "online booking is not available right now", and no messages are sent. Nothing is deleted, and switching it back on (or recording a payment) restores everything.
+
+## Add a clinic from the command line (optional)
 
 ```bash
 npm run seed -- --name "Shifa Clinic" --city Erbil --owner "Dr. Hemin" --email owner@shifa.iq --password "a-long-password" --lang ckb --no-demo-doctor

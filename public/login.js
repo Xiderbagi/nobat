@@ -8,6 +8,6 @@ document.getElementById('login').addEventListener('submit', async (e) => {
     body: JSON.stringify({ email: document.getElementById('email').value, password: document.getElementById('password').value })
   });
   if (res.ok) { location.href = '/app'; return; }
-  err.textContent = res.status === 401 ? T.wrongLogin : T.errGeneric;
+  err.textContent = res.status === 401 ? T.wrongLogin : res.status === 403 ? T.clinicOff : T.errGeneric;
   err.hidden = false;
 });

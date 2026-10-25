@@ -196,3 +196,21 @@ tr.link:hover td { background: var(--sunk); }
 .checks { display: flex; flex-wrap: wrap; gap: 4px 16px; }
 .chan { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; gap: 18px; flex-wrap: wrap; margin: 0; }
 .chan legend { font-size: 14px; font-weight: 600; padding: 0 4px; }
+
+/* Admin */
+.note.ok { background: var(--good-soft); color: var(--good); font-weight: 600; overflow-wrap: anywhere; }
+tr.attn td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
+.kpi b.money { font-size: 20px; }
+.handover { display: grid; gap: 8px; }
+.handover div { display: grid; grid-template-columns: minmax(0, 160px) minmax(0, 1fr); gap: 10px; background: var(--sunk); border-radius: 10px; padding: 10px 12px; align-items: center; }
+.handover span { color: var(--muted); font-size: 14px; }
+.handover b { overflow-wrap: anywhere; }
+.handover .pw { font-size: 22px; letter-spacing: .08em; color: var(--accent); }
+@media (max-width: 600px) { .handover div { grid-template-columns: minmax(0, 1fr); gap: 2px; } }
+.code-box { background: var(--sunk); border-radius: 10px; padding: 10px 12px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; direction: ltr; text-align: left; }
+@media (max-width: 600px) {
+  table.cards-on-phone thead { display: none; }
+  table.cards-on-phone tr { display: grid; gap: 4px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  table.cards-on-phone td { border: 0; padding: 0 8px; white-space: normal; }
+  table.cards-on-phone td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); font-size: 13px; }
+}

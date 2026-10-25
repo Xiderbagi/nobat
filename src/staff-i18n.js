@@ -5,6 +5,7 @@ export const STAFF_LANGS = ['ckb', 'ar', 'en'];
 
 const S = {
   en: {
+    clinicOff: 'This account is switched off. Please contact Nobat.',
     doesServices: 'Services this person does', doesServicesHint: 'Leave all unticked if they do everything. "Anyone free" bookings only go to people who do the chosen services.',
     badPhone: 'That mobile number is not valid. Use the format 0750 123 4567.', st_cancelled: 'Cancelled',
     langName: 'English',
@@ -45,6 +46,7 @@ const S = {
     printPoster: 'Print', posterHelp: 'Print on A4 or A5 and put it in the waiting room, at reception and on the door.'
   },
   ckb: {
+    clinicOff: 'ئەم هەژمارە ڕاگیراوە. تکایە پەیوەندی بە Nobat ـەوە بکە.',
     doesServices: 'ئەو خزمەتگوزارییانەی ئەم کەسە دەیکات', doesServicesHint: 'ئەگەر هەموو شتێک دەکات، هیچیان دیاری مەکە. نۆرەکانی «هەر کەسێکی بەتاڵ» تەنها دەچن بۆ ئەو کەسانەی خزمەتگوزارییە هەڵبژێردراوەکان دەکەن.',
     badPhone: 'ئەو ژمارە مۆبایلە دروست نییە. بەم شێوەیە بینووسە: 0750 123 4567.', st_cancelled: 'هەڵوەشێندرایەوە',
     langName: 'کوردی',
@@ -85,6 +87,7 @@ const S = {
     printPoster: 'چاپکردن', posterHelp: 'لەسەر A4 یان A5 چاپی بکە و لە هۆڵی چاوەڕوانی، پێشوازی و دەرگا دایبنێ.'
   },
   ar: {
+    clinicOff: 'هذا الحساب موقوف. يرجى التواصل مع Nobat.',
     doesServices: 'الخدمات التي يقدمها هذا الشخص', doesServicesHint: 'اترك الكل بدون اختيار إذا كان يقدم كل شيء. حجوزات «أي شخص متاح» تذهب فقط لمن يقدم الخدمات المختارة.',
     badPhone: 'رقم الموبايل غير صحيح. استخدم هذا الشكل: 0750 123 4567.', st_cancelled: 'ملغى',
     langName: 'العربية',

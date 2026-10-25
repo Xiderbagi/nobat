@@ -164,6 +164,36 @@ const MIGRATIONS = [
   // 3: how each patient wants their messages
   `
   ALTER TABLE patients ADD COLUMN channel TEXT NOT NULL DEFAULT 'whatsapp' CHECK (channel IN ('whatsapp', 'sms'));
+  `,
+  // 4: your admin screen: admin accounts, clinic status, payments
+  `
+  ALTER TABLE clinics ADD COLUMN status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('trial', 'active', 'off'));
+  ALTER TABLE clinics ADD COLUMN trial_ends TEXT;
+  ALTER TABLE clinics ADD COLUMN paid_until TEXT;
+  ALTER TABLE clinics ADD COLUMN admin_note TEXT NOT NULL DEFAULT '';
+  CREATE TABLE admins (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE admin_sessions (
+    id TEXT PRIMARY KEY,
+    admin_id INTEGER NOT NULL REFERENCES admins(id),
+    expires_at INTEGER NOT NULL
+  );
+  CREATE TABLE payments (
+    id INTEGER PRIMARY KEY,
+    clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+    amount INTEGER NOT NULL,
+    currency TEXT NOT NULL CHECK (currency IN ('USD', 'IQD')),
+    method TEXT NOT NULL,
+    paid_until TEXT NOT NULL,
+    note TEXT NOT NULL DEFAULT '',
+    admin_id INTEGER REFERENCES admins(id),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
   `
 ];
 

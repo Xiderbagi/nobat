@@ -119,7 +119,7 @@ export function addWalkIn(db, doctor, date, name, phone, channel) {
 }
 
 const BOOKING_SELECT = `SELECT b.*, COALESCE(p.name, b.walkin_name, 'Walk-in') AS patient_name, p.phone AS patient_phone, p.channel AS patient_channel,
-  d.name AS doctor_name, d.mode AS doctor_mode, d.avg_minutes, c.name AS clinic_name, c.slug AS clinic_slug, c.kind AS clinic_kind,
+  d.name AS doctor_name, d.mode AS doctor_mode, d.avg_minutes, c.name AS clinic_name, c.slug AS clinic_slug, c.kind AS clinic_kind, c.status AS clinic_status,
   (SELECT group_concat(s.name, ' + ') FROM booking_services bs JOIN services s ON s.id = bs.service_id WHERE bs.booking_id = b.id) AS service_names
   FROM bookings b JOIN doctors d ON d.id = b.doctor_id JOIN clinics c ON c.id = b.clinic_id LEFT JOIN patients p ON p.id = b.patient_id`;
 
@@ -281,7 +281,7 @@ export function markRebookSent(db, id) {
 // Patients whose follow-up visit is tomorrow and who have not been told yet.
 export function dueFollowUps(db, now = new Date()) {
   const tomorrow = addDays(localParts(now).date, 1);
-  return db.prepare(`SELECT p.*, c.name AS clinic_name, c.slug AS clinic_slug, (SELECT b.lang FROM bookings b WHERE b.patient_id = p.id ORDER BY b.id DESC LIMIT 1) AS lang FROM patients p JOIN clinics c ON c.id = p.clinic_id
+  return db.prepare(`SELECT p.*, c.name AS clinic_name, c.slug AS clinic_slug, c.status AS clinic_status, (SELECT b.lang FROM bookings b WHERE b.patient_id = p.id ORDER BY b.id DESC LIMIT 1) AS lang FROM patients p JOIN clinics c ON c.id = p.clinic_id
     WHERE p.follow_up_date = ? AND (p.follow_up_sent_at IS NULL OR p.follow_up_sent_at < date('now', '-2 days'))`).all(tomorrow);
 }
 

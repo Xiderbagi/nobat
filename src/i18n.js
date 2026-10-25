@@ -5,6 +5,7 @@ export const RTL = new Set(['ckb', 'ar']);
 
 const T = {
   en: {
+    unavailable: 'Online booking is not available right now.', unavailableHint: 'Please call the clinic to book.',
     msgBy: 'Send my messages by',
     keepLink: 'Save this link to see or cancel your booking.',
     chooseServices: 'Choose services', chooseStaff: 'Who should do it?', anyone: 'Anyone free', total: 'Total', minutes: 'min', chooseTime: 'Choose a time',
@@ -31,6 +32,7 @@ const T = {
     msgCode: 'Your Nobat code is {code}. It expires in 10 minutes.'
   },
   ckb: {
+    unavailable: 'ئێستا نۆرەگرتنی ئۆنلاین بەردەست نییە.', unavailableHint: 'تکایە بۆ نۆرەگرتن پەیوەندی بە کلینیکەوە بکە.',
     msgBy: 'نامەکانم بنێرە بە',
     keepLink: 'ئەم بەستەرە هەڵبگرە بۆ بینین یان هەڵوەشاندنەوەی نۆرەکەت.',
     chooseServices: 'خزمەتگوزارییەکان هەڵبژێرە', chooseStaff: 'کێ بۆت بکات؟', anyone: 'هەر کەسێکی بەتاڵ', total: 'کۆی گشتی', minutes: 'خولەک', chooseTime: 'کاتێک هەڵبژێرە',
@@ -57,6 +59,7 @@ const T = {
     msgCode: 'کۆدی Nobat ـەکەت {code}ـە. دوای 10 خولەک بەسەردەچێت.'
   },
   ar: {
+    unavailable: 'الحجز عبر الإنترنت غير متاح حالياً.', unavailableHint: 'يرجى الاتصال بالعيادة للحجز.',
     msgBy: 'أرسل رسائلي عبر',
     keepLink: 'احفظ هذا الرابط لرؤية حجزك أو إلغائه.',
     chooseServices: 'اختر الخدمات', chooseStaff: 'من يقوم بها؟', anyone: 'أي شخص متاح', total: 'المجموع', minutes: 'دقيقة', chooseTime: 'اختر وقتاً',

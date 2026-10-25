@@ -14,6 +14,7 @@ import {
 } from './queue.js';
 import { checkSecret, displayPhone, hashSecret, isClock, isIsoDate, localParts, normalizePhone, otpCode } from './util.js';
 import * as views from './views.js';
+import { adminRouter } from './admin.js';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const OTP_TTL = 10 * 60 * 1000;
@@ -35,6 +36,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     next();
   });
   app.use('/static', express.static(join(ROOT, 'public'), { maxAge: dev ? 0 : '1h' }));
+  app.use('/admin', adminRouter(db, { baseUrl, secure: baseUrl.startsWith('https') }));
   app.use(loadUser(db));
 
   const cookieLang = (req) => LANG_COOKIE.exec(req.headers.cookie || '')?.[1];
@@ -43,6 +45,9 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
   const link = (b) => `${baseUrl}/t/${b.token}`;
   const when = (b) => `${b.date}${b.time ? ' ' + b.time : ''}`;
   const clinicBySlug = (slug) => db.prepare('SELECT * FROM clinics WHERE slug = ?').get(slug);
+  // A doctor patients can book: active, and their clinic not switched off.
+  const bookableDoctor = (id) => { const d = getDoctor(db, id); return d && db.prepare("SELECT 1 FROM clinics WHERE id = ? AND status != 'off'").get(d.clinic_id) ? d : null; };
+  const unavailable = (res, clinic, lang) => res.status(403).send(views.unavailablePage(clinic, lang));
   const clinicOf = (req) => db.prepare('SELECT * FROM clinics WHERE id = ?').get(req.user.clinic_id);
   const ownDoctor = (req, id) => db.prepare('SELECT * FROM doctors WHERE id = ? AND clinic_id = ?').get(Number(id), req.user.clinic_id);
   const ownBooking = (req, id) => { const b = getBooking(db, Number(id)); return b && b.clinic_id === req.user.clinic_id ? b : null; };
@@ -52,7 +57,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
 
   function notifyBooking(b, kind, extra = {}) {
     const to = b.patient_phone;
-    if (!to) return;
+    if (!to || b.clinic_status === 'off') return;
     const salon = b.clinic_kind === 'salon';
     const key = { confirmed: salon ? 'msgConfirmedSalon' : 'msgConfirmed', reminder: salon ? 'msgReminderSalon' : 'msgReminder', near: 'msgNear', turn: 'msgTurn' }[kind];
     const body = t(b.lang, key, { clinic: b.clinic_name, doctor: b.doctor_name, when: when(b), no: b.queue_no, link: link(b), services: b.service_names || '', ...extra });
@@ -88,6 +93,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const clinic = clinicBySlug(req.params.slug);
     if (!clinic) return res.status(404).send('Not found');
     const lang = langOf(req); rememberLang(req, res, lang);
+    if (clinic.status === 'off') return unavailable(res, clinic, lang);
     const staff = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? AND active = 1 ORDER BY name').all(clinic.id);
     if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev, canChooseChannel()));
     res.send(views.clinicPage(clinic, staff, lang));
@@ -99,6 +105,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     if (!doctor || doctor.clinic_id !== clinic.id) return res.status(404).send('Not found');
     if (clinic.kind === 'salon') return res.redirect(`/c/${clinic.slug}`);
     const lang = langOf(req); rememberLang(req, res, lang);
+    if (clinic.status === 'off') return unavailable(res, clinic, lang);
     res.send(views.bookingPage(clinic, doctor, lang, dev, canChooseChannel()));
   });
 
@@ -111,7 +118,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
 
   // ---------- Patient API ----------
   app.get('/api/p/doctors/:id/day', (req, res) => {
-    const doctor = getDoctor(db, Number(req.params.id));
+    const doctor = bookableDoctor(Number(req.params.id));
     if (!doctor) return res.status(404).json({ error: 'error' });
     const days = bookableDays(db, doctor.id);
     const date = isIsoDate(req.query.date) ? req.query.date : (days.find((d) => d.open) || days[0]).date;
@@ -125,7 +132,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
 
   // Salon: which days are open and which start times are free for these services and person.
   app.get('/api/p/salons/:id/times', (req, res) => {
-    const clinic = db.prepare("SELECT * FROM clinics WHERE id = ? AND kind = 'salon'").get(Number(req.params.id));
+    const clinic = db.prepare("SELECT * FROM clinics WHERE id = ? AND kind = 'salon' AND status != 'off'").get(Number(req.params.id));
     if (!clinic) return res.status(404).json({ error: 'error' });
     const staffId = Number(req.query.staff) || null;
     const ids = String(req.query.services || '').split(',').map(Number).filter(Boolean);
@@ -180,7 +187,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const name = String(req.body.name || '').trim().slice(0, 60);
     const phone = normalizePhone(req.body.phone);
     const lang = pickLang(req.body.lang);
-    const doctor = getDoctor(db, Number(doctorId));
+    const doctor = bookableDoctor(Number(doctorId));
     if (!doctor || !isIsoDate(date) || (doctor.mode === 'time' && !isClock(time))) return res.status(400).json({ error: 'error' });
     const err = contactError(req.body, phone);
     if (err) return res.status(400).json({ error: err });
@@ -196,7 +203,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
 
   app.post('/api/p/salon-bookings', (req, res) => {
     const { clinicId, date, time } = req.body;
-    const clinic = db.prepare("SELECT * FROM clinics WHERE id = ? AND kind = 'salon'").get(Number(clinicId));
+    const clinic = db.prepare("SELECT * FROM clinics WHERE id = ? AND kind = 'salon' AND status != 'off'").get(Number(clinicId));
     const serviceIds = (Array.isArray(req.body.serviceIds) ? req.body.serviceIds : []).map(Number).filter(Boolean);
     const phone = normalizePhone(req.body.phone);
     if (!clinic || !isIsoDate(date) || !isClock(time)) return res.status(400).json({ error: 'error' });
@@ -238,6 +245,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
   app.post('/api/login', (req, res) => {
     const s = login(db, req.body.email, req.body.password);
     if (!s) return res.status(401).json({ error: 'wrongLogin' });
+    if (s.off) return res.status(403).json({ error: 'clinicOff' });
     res.set('Set-Cookie', sessionCookie(s.id, baseUrl.startsWith('https'))).json({ ok: true });
   });
 
@@ -506,18 +514,21 @@ export function runScheduled(db, baseUrl, now = new Date()) {
   if (clock >= '18:00') {
     for (const b of dueReminders(db, now)) {
       markReminded(db, b.id);
+      if (b.clinic_status === 'off') continue;
       const salon = b.clinic_kind === 'salon';
       const body = t(b.lang, salon ? 'msgReminderSalon' : 'msgReminder', { clinic: b.clinic_name, doctor: b.doctor_name, when: salon ? b.time : `${b.date}${b.time ? ' ' + b.time : ''}`, no: b.queue_no, services: b.service_names || '', link: `${baseUrl}/t/${b.token}` });
       send(db, { clinicId: b.clinic_id, bookingId: b.id, to: b.patient_phone, kind: 'reminder', body, channel: b.patient_channel });
     }
     for (const p of dueFollowUps(db, now)) {
       markFollowUpSent(db, p.id);
+      if (p.clinic_status === 'off') continue;
       send(db, { clinicId: p.clinic_id, to: p.phone, kind: 'follow-up', channel: p.channel, body: t(p.lang || 'ckb', 'msgFollowUp', { clinic: p.clinic_name, link: `${baseUrl}/c/${p.clinic_slug}` }) });
     }
   }
   if (clock >= '10:00') {
     for (const b of dueRebooks(db, now)) {
       markRebookSent(db, b.id);
+      if (b.clinic_status === 'off') continue;
       send(db, { clinicId: b.clinic_id, bookingId: b.id, to: b.patient_phone, kind: 'rebook', channel: b.patient_channel, body: t(b.lang, 'msgRebook', { clinic: b.clinic_name, link: `${baseUrl}/c/${b.clinic_slug}` }) });
     }
   }

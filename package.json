@@ -12,7 +12,8 @@
     "seed": "node --disable-warning=ExperimentalWarning scripts/seed.js",
     "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js",
     "backup": "node --disable-warning=ExperimentalWarning scripts/backup.js",
-    "set-password": "node --disable-warning=ExperimentalWarning scripts/set-password.js"
+    "set-password": "node --disable-warning=ExperimentalWarning scripts/set-password.js",
+    "create-admin": "node --disable-warning=ExperimentalWarning scripts/create-admin.js"
   },
   "dependencies": {
     "express": "4.21.2",

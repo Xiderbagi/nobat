@@ -119,6 +119,12 @@ export function salonPage(clinic, staff, services, lang, dev, choose) {
   return page({ title: clinic.name, lang, body, manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name, script: 'salon-book.js', data: { lang, dev, clinicId: clinic.id, t: dictFor(lang) } });
 }
 
+export function unavailablePage(clinic, lang) {
+  const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}`)}
+  <main class="wrap narrow stack"><section class="card stack center"><h1>${esc(t(lang, 'unavailable'))}</h1><p class="muted">${esc(t(lang, 'unavailableHint'))}</p>${clinic.phone ? `<p dir="ltr"><b>${esc(clinic.phone)}</b></p>` : ''}</section></main>`;
+  return page({ title: clinic.name, lang, body });
+}
+
 export function ticketPage(booking, lang) {
   const salon = booking.clinic_kind === 'salon';
   const body = `<header class="top"><div class="wrap row"><span class="brand">${LOGO}<span><b>${esc(booking.clinic_name)}</b><small>${esc(booking.doctor_name)}</small></span></span>${langSwitch(lang, `/t/${booking.token}`)}</div></header>
@@ -143,7 +149,7 @@ export function loginPage(lang) {
       <p class="err" id="err" role="alert" hidden></p>
     </form>
   </main>`;
-  return page({ title: 'Nobat', lang, body, script: 'login.js', data: { t: { wrongLogin: L.wrongLogin, errGeneric: L.errGeneric } } });
+  return page({ title: 'Nobat', lang, body, script: 'login.js', data: { t: { wrongLogin: L.wrongLogin, errGeneric: L.errGeneric, clinicOff: L.clinicOff } } });
 }
 
 function staffHeader(user, L, current) {
