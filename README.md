@@ -47,6 +47,8 @@ npm run seed -- --name "Shifa Clinic" --city Erbil --owner "Dr. Hemin" --email o
 npm run seed -- --kind salon --name "Lana Beauty" --city Erbil --owner "Lana" --email lana@example.com --password "a-long-password" --lang ckb --no-demo-doctor
 ```
 
+Forgot a password? `npm run set-password -- --email owner@shifa.iq --password "a-new-password"`
+
 The owner signs in and, under **Settings**, adds the doctors or staff, their working hours (and, for salons, the services), plus accounts for reception and doctors. `--lang` sets the owner's screen language: `ckb` (Kurdish), `ar` (Arabic) or `en` (English).
 
 ## Put it online (step by step, with Render)
