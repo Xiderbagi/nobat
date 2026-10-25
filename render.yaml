@@ -19,6 +19,10 @@ services:
         value: /data/nobat.db
       - key: BASE_URL
         sync: false # set to your public address, e.g. https://nobat.onrender.com or https://nobat.app
+      - key: ADMIN_EMAIL
+        sync: false # your email for the admin screen at /admin
+      - key: ADMIN_PASSWORD
+        sync: false # at least 8 characters; change it here any time to reset your admin password
       - key: WHATSAPP_TOKEN
         sync: false
       - key: WHATSAPP_PHONE_ID

@@ -14,7 +14,7 @@ import {
 } from './queue.js';
 import { checkSecret, displayPhone, hashSecret, isClock, isIsoDate, localParts, normalizePhone, otpCode } from './util.js';
 import * as views from './views.js';
-import { adminRouter } from './admin.js';
+import { adminRouter, ensureAdminFromEnv } from './admin.js';
 import { search, categoriesFor, ratingSummary, reviewPoints } from './directory.js';
 import { isCategory } from './categories.js';
 import { CANCEL_HOURS, LATE_MINUTES, NOSHOW_LIMITS, bookingBlock, cancelInfo, isLate, noShowCount, patientStanding, policyOf, startsAt } from './policy.js';
@@ -691,6 +691,8 @@ export function runScheduled(db, baseUrl, now = new Date()) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const db = openDb(process.env.DB_FILE || join(ROOT, 'data', 'nobat.db'));
+  const adminNote = ensureAdminFromEnv(db);
+  if (adminNote) console.log(adminNote);
   const port = Number(process.env.PORT) || 3000;
   const baseUrl = process.env.BASE_URL || `http://localhost:${port}`;
   createApp(db, { baseUrl }).listen(port, () => console.log(`Nobat running on ${baseUrl}`));

@@ -112,3 +112,18 @@ test('status labels show what needs attention', () => {
   assert.equal(clinicState({ status: 'active', paid_until: '2026-11-25' }, today).cls, 'good');
   assert.equal(clinicState({ status: 'off' }, today).label, 'Switched off');
 });
+
+test('admin login can come from Render settings, and phone-keyboard quotes and spaces are ignored', async () => {
+  const { ensureAdminFromEnv } = await import('../src/admin.js');
+  const { openDb } = await import('../src/db.js');
+  const fresh = openDb(':memory:');
+  assert.equal(ensureAdminFromEnv(fresh, {}), null);
+  assert.match(ensureAdminFromEnv(fresh, { ADMIN_EMAIL: 'Me@Gmail.com ', ADMIN_PASSWORD: 'short' }), /at least 8/);
+  assert.match(ensureAdminFromEnv(fresh, { ADMIN_EMAIL: ' Me@Gmail.com', ADMIN_PASSWORD: '“NobatErbil2026”' }), /ready for me@gmail.com/);
+  const { checkSecret } = await import('../src/util.js');
+  assert.ok(checkSecret('NobatErbil2026', fresh.prepare("SELECT password_hash FROM admins WHERE email = 'me@gmail.com'").get().password_hash));
+  // Changing the password in the settings resets it on the next start; only one account.
+  ensureAdminFromEnv(fresh, { ADMIN_EMAIL: 'me@gmail.com', ADMIN_PASSWORD: 'AnotherPass99' });
+  assert.equal(fresh.prepare('SELECT COUNT(*) AS n FROM admins').get().n, 1);
+  assert.ok(checkSecret('AnotherPass99', fresh.prepare('SELECT password_hash FROM admins').get().password_hash));
+});

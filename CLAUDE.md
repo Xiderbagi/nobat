@@ -15,6 +15,7 @@ Patients book online and follow their turn; staff run the day from a reception s
 - Node 22.13+, Express 4, built-in `node:sqlite`. No build step. Start: `npm start`. Tests: `NODE_ENV=test npm test`.
 - Live on Render (Docker, `render.yaml`), database and uploads on a disk at `/data`.
 - **Every push to `main` goes live automatically within about 5 minutes.** Put experiments and design previews on another branch (for example `design-preview`) and merge to `main` only after the owner approves.
+- The owner's admin login comes from the Render environment variables `ADMIN_EMAIL` and `ADMIN_PASSWORD` (set again at every start). Typing commands in Render's Shell on an iPhone failed because of smart quotes and dashes.
 - Commit as `git -c user.name="Nobat" -c user.email="axiderbagi@glowbalgroup.com" commit ...`.
 
 ## Rules in the code

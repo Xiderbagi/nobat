@@ -32,6 +32,28 @@ function shell(admin, title, main, notice) {
   return page({ title: `${title} · Nobat admin`, body, manifest: '/manifest.webmanifest' });
 }
 
+// Phone keyboards turn " into “ ” and add stray spaces; strip those from typed emails and passwords.
+export const cleanTyped = (v) => String(v ?? '').trim().replace(/^["'“”‘’]+|["'“”‘’]+$/g, '').trim();
+
+// Your admin login from Render's Environment page (ADMIN_EMAIL and ADMIN_PASSWORD): created or reset at every start,
+// so you never need to type commands. Returns a short message for the server log.
+export function ensureAdminFromEnv(db, env = process.env) {
+  const email = cleanTyped(env.ADMIN_EMAIL).toLowerCase();
+  const password = cleanTyped(env.ADMIN_PASSWORD);
+  if (!email && !password) return null;
+  if (!email.includes('@')) return 'ADMIN_EMAIL is not a valid email; admin login not changed.';
+  if (password.length < 8) return 'ADMIN_PASSWORD needs at least 8 characters; admin login not changed.';
+  const existing = db.prepare('SELECT id, password_hash FROM admins WHERE email = ?').get(email);
+  if (existing && checkSecret(password, existing.password_hash)) return `Admin login ready for ${email}.`;
+  if (existing) {
+    db.prepare('UPDATE admins SET password_hash = ? WHERE id = ?').run(hashSecret(password), existing.id);
+    db.prepare('DELETE FROM admin_sessions WHERE admin_id = ?').run(existing.id);
+  } else {
+    db.prepare('INSERT INTO admins (name, email, password_hash) VALUES (?, ?, ?)').run('Owner', email, hashSecret(password));
+  }
+  return `Admin login ready for ${email}.`;
+}
+
 // What a clinic's row says about it, and whether it needs attention.
 export function clinicState(c, today) {
   if (c.status === 'off') return { label: 'Switched off', cls: 'bad', alert: false };
@@ -73,15 +95,15 @@ export function adminRouter(db, { baseUrl, secure, uploads }) {
         <button class="btn primary big">Sign in</button>
         ${error ? `<p class="err" role="alert">${esc(error)}</p>` : ''}
       </form>` : `<section class="card stack"><h2>No admin account yet</h2>
-        <p>Create yours once in the Render Shell, then come back here:</p>
+        <p>On Render, open your service → <b>Environment</b> → add <b>ADMIN_EMAIL</b> and <b>ADMIN_PASSWORD</b> (at least 8 characters) → <b>Save</b>. Wait about 3 minutes, then reload this page.</p><p class="muted small">Or create it in the Render Shell:</p>
         <pre class="code-box">npm run create-admin -- --name "Your Name" --email you@example.com --password "a-long-password"</pre></section>`}
     </main>`;
     res.status(status).send(page({ title: 'Nobat admin', body }));
   }
 
   r.post('/login', (req, res) => {
-    const admin = db.prepare('SELECT * FROM admins WHERE email = ?').get(String(req.body.email || '').trim().toLowerCase());
-    const ok = checkSecret(req.body.password, admin ? admin.password_hash : '00:00');
+    const admin = db.prepare('SELECT * FROM admins WHERE email = ?').get(cleanTyped(req.body.email).toLowerCase());
+    const ok = checkSecret(cleanTyped(req.body.password), admin ? admin.password_hash : '00:00');
     if (!admin || !ok) return loginPage(res, 'Wrong email or password.', 401);
     const id = token(24);
     db.prepare('INSERT INTO admin_sessions (id, admin_id, expires_at) VALUES (?, ?, ?)').run(id, admin.id, Date.now() + SESSION_DAYS * 864e5);

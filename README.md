@@ -69,6 +69,9 @@ Until WhatsApp or SMS is set up, nothing is actually sent. Messages are printed 
 
 ## Your admin screen
 
+**Your admin login (easiest way):** on Render, open your service → **Environment** → add **ADMIN_EMAIL** (your email) and **ADMIN_PASSWORD** (at least 8 characters) → **Save**. Render restarts the site; after about 3 minutes, go to `/admin` and sign in. Forgot the password? Change **ADMIN_PASSWORD** there and save again.
+
+
 Add clinics, see how each is doing, record payments, reset passwords and switch clinics off and on, all at `your-address/admin`.
 
 Create your admin account once (in the Render Shell, or on your computer):
