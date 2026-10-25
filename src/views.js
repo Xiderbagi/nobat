@@ -1,3 +1,6 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import { esc } from './util.js';
 import { LANGS, RTL, t, dictFor } from './i18n.js';
 import { STAFF_LANGS, staffDict, st } from './staff-i18n.js';
@@ -7,6 +10,10 @@ import { BEAUTY_ART, CATEGORY_ICONS, DOOR_ART, HERO_ART, MOOD_ART, avatarTone } 
 const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#ffc53d"/></svg>';
 
 // Data for page scripts goes in a JSON script tag, escaped so it can't close the tag.
+// A fingerprint of the styles and scripts, added to their links, so phones load new versions at once after an update.
+const PUBLIC = fileURLToPath(new URL('../public/', import.meta.url));
+const ASSET_V = createHash('sha1').update(readdirSync(PUBLIC).filter((f) => /\.(css|js)$/.test(f)).sort().map((f) => readFileSync(PUBLIC + f)).join('')).digest('hex').slice(0, 10);
+
 const json = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
 const iqd = (n) => Number(n || 0).toLocaleString('en-US');
 const initials = (name) => esc(String(name).replace(/^(Dr\.?|د\.)\s*/i, '').split(/\s+/).map((w) => w[0] || '').join('').slice(0, 2));
@@ -19,7 +26,7 @@ export function page({ title, lang = 'en', body, data, script, bodyClass = '', m
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <link rel="stylesheet" href="/static/vendor/vazirmatn/index.css">
-<link rel="stylesheet" href="/static/app.css">
+<link rel="stylesheet" href="/static/app.css?v=${ASSET_V}">
 <link rel="manifest" href="${esc(manifest)}">
 <meta name="theme-color" content="#0b8f7a">
 <link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
@@ -27,13 +34,13 @@ export function page({ title, lang = 'en', body, data, script, bodyClass = '', m
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="${esc(appName)}">
-<script src="/static/pwa.js" defer></script>
+<script src="/static/pwa.js?v=${ASSET_V}" defer></script>
 ${head}
 </head>
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
 ${body}
 ${data !== undefined ? `<script id="data" type="application/json">${json(data)}</script>` : ''}
-${[].concat(script || []).map((f) => `<script src="/static/${f}" defer></script>`).join('')}
+${[].concat(script || []).map((f) => `<script src="/static/${f}${f.startsWith('vendor/') ? '' : `?v=${ASSET_V}`}" defer></script>`).join('')}
 </body>
 </html>`;
 }

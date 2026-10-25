@@ -1,6 +1,6 @@
 // Minimal service worker so phones offer "Install app" / "Add to Home Screen".
 // It caches the app's styles, scripts and icons; pages and data always come fresh from the server.
-const CACHE = 'nobat-static-v1';
+const CACHE = 'nobat-static-v2';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => {
