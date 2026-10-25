@@ -17,7 +17,7 @@ const ERRORS = {
   emailTaken: 'That email already has an account. Use another email.', badKind: 'Choose clinic or salon.', shortPassword: 'The password needs at least 8 characters.'
 };
 
-const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="13" y="7.5" width="3" height="6" rx="1.5" fill="#fff"/><rect x="24" y="7.5" width="3" height="6" rx="1.5" fill="#fff"/><rect x="8.5" y="10.5" width="23" height="21" rx="4.5" fill="#fff"/><path d="M8.5 15a4.5 4.5 0 0 1 4.5-4.5h14a4.5 4.5 0 0 1 4.5 4.5v1.5h-23Z" fill="#c69563"/><path d="M14.5 23.5l3.8 3.8 7.4-7.6" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const LOGO = '<svg viewBox="0 0 512 512" aria-hidden="true" class="logo"><rect width="512" height="512" rx="120" fill="#1b2a4a"/><g transform="translate(-2 9)" fill="none" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"><path d="M130 370V150L262 360" stroke="#fff"/><path d="M262 360c60 20 128 -20 124 -140" stroke="#c69563"/></g><circle cx="324" cy="141" r="32" fill="#fff"/></svg>';
 
 // Small count of open support requests next to the Support tab.
 let supportCount = () => 0;
