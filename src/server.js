@@ -38,6 +38,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     });
     next();
   });
+  app.use('/static/vendor/vazirmatn', express.static(join(ROOT, 'node_modules', '@fontsource-variable', 'vazirmatn'), { maxAge: '30d' }));
   app.use('/static/vendor/leaflet', express.static(join(ROOT, 'node_modules', 'leaflet', 'dist'), { maxAge: '7d' }));
   app.use('/static', express.static(join(ROOT, 'public'), { maxAge: dev ? 0 : '1h' }));
   app.use('/admin', adminRouter(db, { baseUrl, secure: baseUrl.startsWith('https') }));
@@ -75,7 +76,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     { src: '/static/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
   ];
   const manifest = (res, m) => res.type('application/manifest+json').send(JSON.stringify({
-    display: 'standalone', background_color: '#edf1f6', theme_color: '#1f5fbf', icons: ICONS, ...m
+    display: 'standalone', background_color: '#f5faf8', theme_color: '#0b8f7a', icons: ICONS, ...m
   }));
   // Staff app: opens on the Today screen.
   app.get('/manifest.webmanifest', (_req, res) => manifest(res, { id: '/app', name: 'Nobat', short_name: 'Nobat', start_url: '/app', scope: '/' }));
@@ -117,8 +118,8 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const lang = langOf(req); rememberLang(req, res, lang);
     if (clinic.status === 'off') return unavailable(res, clinic, lang);
     const staff = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? AND active = 1 ORDER BY name').all(clinic.id);
-    if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev, canChooseChannel(), reviewsHtml(clinic, lang)));
-    res.send(views.clinicPage(clinic, staff, lang, reviewsHtml(clinic, lang)));
+    if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev, canChooseChannel(), reviewsHtml(clinic, lang), ratingSummary(db, clinic.id)));
+    res.send(views.clinicPage(clinic, staff, lang, reviewsHtml(clinic, lang), ratingSummary(db, clinic.id)));
   });
 
   app.get('/c/:slug/d/:id', (req, res) => {

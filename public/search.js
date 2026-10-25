@@ -21,21 +21,27 @@
 
   function renderCats() {
     const cats = D.categories.filter((c) => !state.kind || c.kind === state.kind);
-    $('cats').replaceChildren(...cats.map((c) => el('button', {
-      type: 'button', class: 'chip', 'aria-pressed': String(state.cat === c.key),
-      onclick: () => { state.cat = state.cat === c.key ? '' : c.key; renderCats(); load(); }
-    }, c.name)));
+    $('cats').replaceChildren(...cats.map((c) => {
+      const icon = D.icons[c.key] || { tone: 'teal', svg: '' };
+      const ic = el('span', { class: `cat-ic tone-${icon.tone}` });
+      ic.innerHTML = icon.svg; // our own fixed icons
+      return el('button', {
+        type: 'button', class: 'cat-tile', 'aria-pressed': String(state.cat === c.key),
+        onclick: () => { state.cat = state.cat === c.key ? '' : c.key; renderCats(); load(); $('results').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }
+      }, ic, c.name);
+    }));
   }
 
   function card(r) {
     const meta = [r.kind === 'salon' ? T.salonsTab : null, [r.address, r.city].filter(Boolean).join(', '), r.distanceKm != null ? tr('kmAway', { km: r.distanceKm }) : null].filter(Boolean).join(' · ');
+    const initials = r.name.split(/\s+/).map((w) => w[0] || '').join('').slice(0, 2);
     return el('article', { class: 'card result' + (r.featured ? ' featured' : '') },
-      el('div', { class: 'row' },
-        el('a', { href: bookUrl(r), class: 'rname' }, el('b', {}, r.name)),
-        r.featured ? el('span', { class: 'pill accent' }, '★ ' + T.featured) : null,
-        el('span', { class: 'grow' }),
-        r.rating.count ? el('span', { class: 'rating' }, el('span', { class: 'stars', 'aria-hidden': 'true' }, stars(r.rating.overall)), ` ${r.rating.overall.toFixed(1)} (${r.rating.count})`) : null),
-      el('p', { class: 'muted small' }, meta),
+      el('div', { class: 'head' },
+        el('span', { class: `av ${r.tone}` }, initials),
+        el('div', { class: 'grow' },
+          el('div', { class: 'row' }, el('a', { href: bookUrl(r), class: 'rname' }, r.name), r.featured ? el('span', { class: 'pill accent' }, '★ ' + T.featured) : null),
+          el('p', { class: 'muted small' }, meta)),
+        r.rating.count ? el('span', { class: 'rating' }, '★ ' + r.rating.overall.toFixed(1), el('span', { class: 'muted' }, ` (${r.rating.count})`)) : null),
       el('div', { class: 'tags' }, r.categories.slice(0, 4).map((k) => el('span', { class: 'pill' }, D.catNames[k] || k))),
       r.kind === 'clinic'
         ? el('div', { class: 'docs' }, r.doctors.map((d) => el('a', { class: 'docrow', href: bookUrl(r, d) },

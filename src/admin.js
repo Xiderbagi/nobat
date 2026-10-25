@@ -16,7 +16,7 @@ const ERRORS = {
   emailTaken: 'That email already has an account. Use another email.', badKind: 'Choose clinic or salon.', shortPassword: 'The password needs at least 8 characters.'
 };
 
-const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#f08a6f"/></svg>';
+const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#ffc53d"/></svg>';
 
 function shell(admin, title, main, notice) {
   const body = `<header class="top"><div class="wrap row">

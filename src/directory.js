@@ -1,6 +1,7 @@
 // Public search: find clinics and salons by category or words, nearest first, featured (paid) ones on top.
 import { CATEGORIES, categoriesForText, fold, isCategory, REVIEW_POINTS } from './categories.js';
 import { localParts } from './util.js';
+import { avatarTone } from './icons.js';
 
 // Distance in km between two points on Earth.
 export function distanceKm(lat1, lng1, lat2, lng2) {
@@ -56,7 +57,7 @@ export function search(db, { q = '', cat = '', lat = null, lng = null, kind = ''
     }
     const dist = here && c.lat != null && c.lng != null ? distanceKm(lat, lng, c.lat, c.lng) : null;
     results.push({
-      id: c.id, slug: c.slug, name: c.name, kind: c.kind, city: c.city, address: c.address,
+      id: c.id, slug: c.slug, name: c.name, kind: c.kind, city: c.city, address: c.address, tone: avatarTone(c.name),
       lat: c.lat, lng: c.lng, distanceKm: dist == null ? null : Math.round(dist * 10) / 10,
       featured: isFeatured(c, today), categories: [...cats], score,
       rating: ratingSummary(db, c.id),

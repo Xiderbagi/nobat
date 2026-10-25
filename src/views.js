@@ -2,8 +2,9 @@ import { esc } from './util.js';
 import { LANGS, RTL, t, dictFor } from './i18n.js';
 import { STAFF_LANGS, staffDict, st } from './staff-i18n.js';
 import { categoryName } from './categories.js';
+import { CATEGORY_ICONS, HERO_ART, avatarTone } from './icons.js';
 
-const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#f08a6f"/></svg>';
+const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#ffc53d"/></svg>';
 
 // Data for page scripts goes in a JSON script tag, escaped so it can't close the tag.
 const json = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
@@ -17,9 +18,10 @@ export function page({ title, lang = 'en', body, data, script, bodyClass = '', m
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
+<link rel="stylesheet" href="/static/vendor/vazirmatn/index.css">
 <link rel="stylesheet" href="/static/app.css">
 <link rel="manifest" href="${esc(manifest)}">
-<meta name="theme-color" content="#1f5fbf">
+<meta name="theme-color" content="#0b8f7a">
 <link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -64,15 +66,23 @@ export function directoryPage(lang, categories) {
     <a class="brand" href="/?lang=${lang}">${LOGO}<span><b>Nobat</b><small>${esc(t(lang, 'findTitle'))}</small></span></a>
     ${langSwitch(lang, '/')}</div></header>
   <main class="wrap stack">
-    <form class="search card stack" id="searchForm" role="search">
-      <h1>${esc(t(lang, 'findTitle'))}</h1>
-      <div class="searchrow"><input id="q" type="search" placeholder="${esc(t(lang, 'findPh'))}" autocomplete="off" aria-label="${esc(t(lang, 'search'))}">
-        <button class="btn primary">${esc(t(lang, 'search'))}</button>
-        <button type="button" class="btn ghost" id="near">📍 ${esc(t(lang, 'nearMe'))}</button></div>
-      <div class="kindtabs" role="group"><button type="button" class="chip" data-kind="" aria-pressed="true">${esc(t(lang, 'all'))}</button><button type="button" class="chip" data-kind="clinic" aria-pressed="false">${esc(t(lang, 'doctorsTab'))}</button><button type="button" class="chip" data-kind="salon" aria-pressed="false">${esc(t(lang, 'salonsTab'))}</button></div>
-      <div class="cats" id="cats"></div>
-      <p class="muted small" id="status" role="status"></p>
-    </form>
+    <section class="hero-band">
+      <div>
+        <h1>${esc(t(lang, 'heroTitle'))}</h1>
+        <p class="lede">${esc(t(lang, 'heroLede'))}</p>
+        <form class="search stack" id="searchForm" role="search">
+          <div class="searchrow"><input id="q" type="search" placeholder="${esc(t(lang, 'findPh'))}" autocomplete="off" aria-label="${esc(t(lang, 'search'))}">
+            <button class="btn primary">${esc(t(lang, 'search'))}</button>
+            <button type="button" class="btn ghost" id="near">📍 ${esc(t(lang, 'nearMe'))}</button></div>
+          <p class="muted small" id="status" role="status"></p>
+        </form>
+        <div class="trust"><span>${esc(t(lang, 'trust1'))}</span><span>${esc(t(lang, 'trust2'))}</span><span>${esc(t(lang, 'trust3'))}</span></div>
+      </div>
+      ${HERO_ART}
+    </section>
+    <div class="section-title"><h2>${esc(t(lang, 'browseTitle'))}</h2>
+      <div class="kindtabs" role="group"><button type="button" class="chip" data-kind="" aria-pressed="true">${esc(t(lang, 'all'))}</button><button type="button" class="chip" data-kind="clinic" aria-pressed="false">${esc(t(lang, 'doctorsTab'))}</button><button type="button" class="chip" data-kind="salon" aria-pressed="false">${esc(t(lang, 'salonsTab'))}</button></div></div>
+    <div class="cat-grid" id="cats"></div>
     <div class="row"><div class="viewtabs" role="group"><button type="button" class="chip" data-view="list" aria-pressed="true">${esc(t(lang, 'listView'))}</button><button type="button" class="chip" data-view="map" aria-pressed="false">${esc(t(lang, 'mapView'))}</button></div></div>
     <div id="map" class="map" hidden></div>
     <div id="results" class="stack"></div>
@@ -80,17 +90,24 @@ export function directoryPage(lang, categories) {
   </main>`;
   return page({
     title: 'Nobat', lang, body, script: ['vendor/leaflet/leaflet.js', 'search.js'], head: '<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">',
-    data: { lang, categories, t: dictFor(lang), catNames: Object.fromEntries(categories.map((c) => [c.key, c.name])) }
+    data: { lang, categories, icons: CATEGORY_ICONS, t: dictFor(lang), catNames: Object.fromEntries(categories.map((c) => [c.key, c.name])) }
   });
 }
 
-export function clinicPage(clinic, doctors, lang, reviews = '') {
+function cover(clinic, lang, rating) {
+  return `<section class="cover"><span class="av">${initials(clinic.name)}</span><div>
+    <h1>${esc(clinic.name)}</h1><p>${esc([clinic.address, clinic.city].filter(Boolean).join(', '))}</p>
+    ${rating && rating.count ? `<span class="rating-chip">★ ${rating.overall.toFixed(1)} · ${esc(rating.count === 1 ? t(lang, 'oneReview') : t(lang, 'nReviews', { n: rating.count }))}</span>` : ''}</div></section>`;
+}
+
+export function clinicPage(clinic, doctors, lang, reviews = '', rating = null) {
   const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}`)}
   <main class="wrap stack">
-    <h1>${esc(t(lang, 'chooseDoctor'))}</h1>
+    ${cover(clinic, lang, rating)}
+    <h2>${esc(t(lang, 'chooseDoctor'))}</h2>
     <div class="cards">${doctors.map((d) => `
       <a class="card doc" href="/c/${esc(clinic.slug)}/d/${d.id}?lang=${lang}">
-        <span class="av">${initials(d.name)}</span>
+        <span class="av ${avatarTone(d.name)}">${initials(d.name)}</span>
         <span><b>${esc(d.name)}</b><span class="muted">${esc(d.specialty || categoryName(d.category, lang))}</span>
         <span class="fee">${esc(t(lang, 'fee'))}: ${iqd(d.fee_iqd)} ${esc(t(lang, 'iqd'))}</span></span>
       </a>`).join('') || '<p class="muted">—</p>'}
@@ -134,9 +151,10 @@ function contactForm(lang, choose) {
     </form>`;
 }
 
-export function salonPage(clinic, staff, services, lang, dev, choose, reviews = '') {
+export function salonPage(clinic, staff, services, lang, dev, choose, reviews = '', rating = null) {
   const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}`)}
   <main class="wrap narrow stack">
+    ${cover(clinic, lang, rating)}
     <section class="card stack">
       <h2>1. ${esc(t(lang, 'chooseServices'))}</h2>
       <div class="svcs" id="svcs">${services.map((s) => `
@@ -146,7 +164,7 @@ export function salonPage(clinic, staff, services, lang, dev, choose, reviews = 
       <h2>2. ${esc(t(lang, 'chooseStaff'))}</h2>
       <div class="staffrow" id="staff">
         <label class="staff"><input type="radio" name="staff" value="" checked><span class="av sm">★</span><b>${esc(t(lang, 'anyone'))}</b></label>
-        ${staff.map((d) => `<label class="staff"><input type="radio" name="staff" value="${d.id}"><span class="av sm">${initials(d.name)}</span><b>${esc(d.name)}</b><span class="muted small">${esc(d.specialty)}</span></label>`).join('')}
+        ${staff.map((d) => `<label class="staff"><input type="radio" name="staff" value="${d.id}"><span class="av sm ${avatarTone(d.name)}">${initials(d.name)}</span><b>${esc(d.name)}</b><span class="muted small">${esc(d.specialty)}</span></label>`).join('')}
       </div>
       <h2>3. ${esc(t(lang, 'chooseTime'))}</h2>
       <div class="days" id="days"></div>

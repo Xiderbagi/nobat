@@ -16,6 +16,7 @@
     "create-admin": "node --disable-warning=ExperimentalWarning scripts/create-admin.js"
   },
   "dependencies": {
+    "@fontsource-variable/vazirmatn": "5.2.8",
     "express": "4.21.2",
     "leaflet": "1.9.4",
     "qrcode": "1.5.4"

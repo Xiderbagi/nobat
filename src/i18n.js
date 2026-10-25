@@ -5,6 +5,8 @@ export const RTL = new Set(['ckb', 'ar']);
 
 const T = {
   en: {
+    heroTitle: 'Book your doctor or salon in seconds', heroLede: 'Find the best clinics and salons near you, see real reviews, and get a message when it is your turn.',
+    trust1: 'No waiting room', trust2: 'Real reviews', trust3: 'Free for patients', browseTitle: 'What are you looking for?',
     oneReview: '1 review',
     findTitle: 'Find a doctor or salon near you', findPh: 'Dentist, children\'s doctor, barber, clinic name…', search: 'Search', nearMe: 'Near me', locating: 'Finding where you are…',
     locDenied: 'We couldn\'t get your location. Allow location in your browser settings, or search by city.', listView: 'List', mapView: 'Map', all: 'All',
@@ -39,6 +41,8 @@ const T = {
     msgCode: 'Your Nobat code is {code}. It expires in 10 minutes.'
   },
   ckb: {
+    heroTitle: 'نۆرەی دکتۆر و ساڵۆنەکەت لە چەند چرکەیەکدا بگرە', heroLede: 'باشترین کلینیک و ساڵۆنەکانی نزیک خۆت بدۆزەرەوە، هەڵسەنگاندنی ڕاستەقینە ببینە، و کاتێک نۆرەت هات نامەت بۆ دێت.',
+    trust1: 'بێ چاوەڕوانی لە هۆڵ', trust2: 'هەڵسەنگاندنی ڕاستەقینە', trust3: 'بۆ نەخۆشان بێبەرامبەرە', browseTitle: 'بەدوای چیدا دەگەڕێیت؟',
     oneReview: '1 هەڵسەنگاندن',
     findTitle: 'دکتۆر یان ساڵۆنێکی نزیک لە خۆت بدۆزەرەوە', findPh: 'ددان، دکتۆری منداڵان، سەرتاش، ناوی کلینیک…', search: 'گەڕان', nearMe: 'نزیک لە من', locating: 'شوێنەکەت دەدۆزینەوە…',
     locDenied: 'نەمانتوانی شوێنەکەت بزانین. ڕێگە بە شوێن بدە لە ڕێکخستنەکانی وێبگەڕەکەت، یان بە ناوی شار بگەڕێ.', listView: 'لیست', mapView: 'نەخشە', all: 'هەموو',
@@ -73,6 +77,8 @@ const T = {
     msgCode: 'کۆدی Nobat ـەکەت {code}ـە. دوای 10 خولەک بەسەردەچێت.'
   },
   ar: {
+    heroTitle: 'احجز عند طبيبك أو صالونك في ثوانٍ', heroLede: 'اعثر على أفضل العيادات والصالونات القريبة منك، شاهد تقييمات حقيقية، واستلم رسالة عندما يحين دورك.',
+    trust1: 'بدون انتظار في القاعة', trust2: 'تقييمات حقيقية', trust3: 'مجاني للمرضى', browseTitle: 'عمّ تبحث؟',
     oneReview: 'تقييم واحد',
     findTitle: 'ابحث عن طبيب أو صالون قريب منك', findPh: 'أسنان، طبيب أطفال، حلاق، اسم العيادة…', search: 'بحث', nearMe: 'قريب مني', locating: 'نحدد موقعك…',
     locDenied: 'لم نتمكن من معرفة موقعك. اسمح بالموقع في إعدادات المتصفح، أو ابحث باسم المدينة.', listView: 'قائمة', mapView: 'خريطة', all: 'الكل',
