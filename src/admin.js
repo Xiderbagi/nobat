@@ -4,7 +4,7 @@ import express from 'express';
 import QRCode from 'qrcode';
 import { tx } from './db.js';
 import { createClinic, ClinicError, tempPassword } from './clinics.js';
-import { addDays, checkSecret, esc, hashSecret, isIsoDate, localParts, token } from './util.js';
+import { addDays, checkSecret, displayPhone, esc, hashSecret, isIsoDate, localParts, normalizePhone, token } from './util.js';
 import { page, posterPage } from './views.js';
 import { MAX_BYTES, SITE_PHOTO_KEYS, isJpeg, removeFile, saveJpeg, sitePhotos } from './uploads.js';
 
@@ -19,10 +19,14 @@ const ERRORS = {
 
 const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#ffc53d"/></svg>';
 
+// Small count of open support requests next to the Support tab.
+let supportCount = () => 0;
+const openSupport = () => { const n = supportCount(); return n ? ` <span class="pill bad">${n}</span>` : ''; };
+
 function shell(admin, title, main, notice) {
   const body = `<header class="top"><div class="wrap row">
     <a class="brand" href="/admin">${LOGO}<span><b>Nobat admin</b><small>${esc(admin.name)}</small></span></a>
-    <nav class="tabs"><a href="/admin">Clinics</a><a href="/admin/clinics/new">+ Add clinic</a><a href="/admin/photos">Website photos</a></nav>
+    <nav class="tabs"><a href="/admin">Clinics</a><a href="/admin/clinics/new">+ Add clinic</a><a href="/admin/photos">Website photos</a><a href="/admin/noshows">No-shows</a><a href="/admin/support">Support${openSupport(admin)}</a></nav>
     <form method="post" action="/admin/logout"><button class="btn ghost small">Sign out</button></form></div></header>
   <main class="wrap stack">${notice ? `<p class="note ok" role="status">${esc(notice)}</p>` : ''}${main}</main>`;
   return page({ title: `${title} · Nobat admin`, body, manifest: '/manifest.webmanifest' });
@@ -44,6 +48,7 @@ export function clinicState(c, today) {
 export function adminRouter(db, { baseUrl, secure, uploads }) {
   const r = express.Router();
   r.use(express.urlencoded({ extended: false, limit: '20kb' }));
+  supportCount = () => db.prepare('SELECT COUNT(*) AS n FROM support_requests WHERE done = 0').get().n;
 
   const readCookie = (req) => (new RegExp(`(?:^|;\\s*)${COOKIE}=([A-Za-z0-9_-]+)`).exec(req.headers.cookie || '') || [])[1];
   const cookie = (id, maxAge) => `${COOKIE}=${id}; HttpOnly; SameSite=Strict; Path=/admin; Max-Age=${maxAge}${secure ? '; Secure' : ''}`;
@@ -354,8 +359,8 @@ export function adminRouter(db, { baseUrl, secure, uploads }) {
     clinics_hero: ['Doctors and clinics page', 'Big photo at the top of the clinics page. A bright, friendly clinic or doctor with a patient.'],
     beauty_hero: ['Salons and spa page', 'Big photo at the top of the salons page. Calm and natural: plants, soft light, a spa or salon.'],
     beauty_barber: ['Barbers', 'Photo for the "Barbers" card on the salons page.'],
-    beauty_spa: ['Nails and spa', 'Photo for the "Nails and spa" card.'],
-    beauty_salon: ["Women's salons", 'Photo for the "Women\'s salons" card.']
+    beauty_spa: ['Spa and wellness', 'Photo for the "Spa and wellness" picture on the home page and the salons page.'],
+    beauty_salon: ["Salons and women's salons", 'Photo for the "Salons and barbers" picture on the home page and the "Women\'s salons" card.']
   };
   r.get('/photos', (req, res) => {
     const photos = sitePhotos(db);
@@ -376,6 +381,54 @@ export function adminRouter(db, { baseUrl, secure, uploads }) {
     db.prepare("INSERT INTO site_photos (key, file) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET file = excluded.file, updated_at = datetime('now')").run(req.params.key, name);
     if (old) removeFile(uploads, old.file);
     res.json({ ok: true, url: `/uploads/${name}` });
+  });
+
+  // ---------- No-shows: people who miss visits at several places; ban a number from booking online anywhere ----------
+  r.get('/noshows', (req, res) => {
+    const rows = db.prepare(`SELECT p.phone, COUNT(*) AS misses, COUNT(DISTINCT b.clinic_id) AS places, MAX(b.date) AS last, group_concat(DISTINCT c.name) AS clinics,
+        MAX(p.name) AS name, (SELECT 1 FROM banned_phones x WHERE x.phone = p.phone) AS banned
+      FROM bookings b JOIN patients p ON p.id = b.patient_id JOIN clinics c ON c.id = b.clinic_id
+      WHERE b.status = 'no_show' AND b.date >= ? GROUP BY p.phone HAVING misses >= 2 ORDER BY misses DESC, last DESC LIMIT 200`).all(addDays(localParts().date, -180));
+    const banned = db.prepare('SELECT * FROM banned_phones ORDER BY created_at DESC').all();
+    const banForm = (phone) => `<form method="post" action="/admin/noshows/ban" class="row"><input type="hidden" name="phone" value="${esc(phone)}"><button class="btn ghost small danger">Ban from Nobat</button></form>`;
+    const main = `<h1>No-shows</h1>
+      <p class="muted">People who missed 2 or more visits in the last 6 months, at any clinic or salon. Each clinic already stops online booking by its own rules; a ban here stops online booking for that number <b>everywhere on Nobat</b>. They can still book by phone.</p>
+      <section class="card stack"><h2>Missed visits</h2>${rows.length ? `<div class="tablewrap"><table><thead><tr><th>Name</th><th>Phone</th><th>Missed</th><th>At</th><th>Last</th><th></th></tr></thead><tbody>${rows.map((x) => `<tr>
+        <td>${esc(x.name)}</td><td dir="ltr">${esc(displayPhone(x.phone))}</td><td><b>${x.misses}</b></td><td class="small">${esc(x.clinics)}</td><td dir="ltr">${esc(x.last)}</td>
+        <td>${x.banned ? '<span class="pill bad">Banned</span>' : banForm(x.phone)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No one has missed 2 or more visits. 👍</p>'}</section>
+      <section class="card stack"><h2>Banned numbers</h2>
+        <form method="post" action="/admin/noshows/ban" class="row"><input name="phone" placeholder="0750 123 4567" dir="ltr" required><input name="reason" placeholder="Reason (only you see it)"><button class="btn primary small">Ban number</button></form>
+        ${banned.length ? `<div class="tablewrap"><table><tbody>${banned.map((x) => `<tr><td dir="ltr">${esc(displayPhone(x.phone))}</td><td class="small">${esc(x.reason)}</td><td dir="ltr" class="small">${esc(x.created_at.slice(0, 10))}</td>
+          <td><form method="post" action="/admin/noshows/unban"><input type="hidden" name="phone" value="${esc(x.phone)}"><button class="btn ghost small">Lift ban</button></form></td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No banned numbers.</p>'}
+      </section>`;
+    res.send(shell(req.admin, 'No-shows', main, { ban: 'Number banned from online booking.', unban: 'Ban lifted.', bad: 'That phone number is not valid.' }[req.query.ok]));
+  });
+  r.post('/noshows/ban', (req, res) => {
+    const phone = normalizePhone(req.body.phone);
+    if (!phone) return res.redirect(303, '/admin/noshows?ok=bad');
+    db.prepare('INSERT INTO banned_phones (phone, reason) VALUES (?, ?) ON CONFLICT(phone) DO NOTHING').run(phone, String(req.body.reason || 'Many no-shows').slice(0, 200));
+    res.redirect(303, '/admin/noshows?ok=ban');
+  });
+  r.post('/noshows/unban', (req, res) => {
+    db.prepare('DELETE FROM banned_phones WHERE phone = ?').run(String(req.body.phone || ''));
+    res.redirect(303, '/admin/noshows?ok=unban');
+  });
+
+  // ---------- Support desk: messages sent from the public Support page ----------
+  const TOPICS = { cancel: 'Cancel or change a booking', blocked: 'Online booking stopped', clinic: 'Problem with a clinic or salon', join: 'Add my clinic or salon', other: 'Something else' };
+  r.get('/support', (req, res) => {
+    const rows = db.prepare('SELECT * FROM support_requests ORDER BY done, id DESC LIMIT 200').all();
+    const main = `<h1>Support</h1><p class="muted">Messages from the Support page. Call or text them back, then mark them done.</p>
+      ${rows.length ? rows.map((x) => `<section class="card stack${x.done ? ' muted' : ''}">
+        <div class="row"><b>${esc(x.name)}</b>${x.phone ? `<a href="tel:${esc(x.phone)}" dir="ltr">${esc(displayPhone(x.phone))}</a>` : ''}<span class="pill">${esc(TOPICS[x.topic] || x.topic)}</span>
+          <span class="muted small" dir="ltr">${esc(x.created_at)} UTC · ${esc(x.lang)}</span>${x.done ? '<span class="pill good">Done</span>' : ''}</div>
+        <p dir="auto">${esc(x.message)}</p>
+        <form method="post" action="/admin/support/${x.id}"><button class="btn ghost small">${x.done ? 'Open again' : 'Mark done'}</button></form></section>`).join('') : '<p class="muted card">No messages yet.</p>'}`;
+    res.send(shell(req.admin, 'Support', main));
+  });
+  r.post('/support/:id', (req, res) => {
+    db.prepare('UPDATE support_requests SET done = 1 - done WHERE id = ?').run(Number(req.params.id));
+    res.redirect(303, '/admin/support');
   });
 
   r.get('/clinics/:id/poster', async (req, res, next) => {

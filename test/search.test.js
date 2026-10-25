@@ -103,8 +103,8 @@ test('only a finished visit can be reviewed, once; ratings show in search and on
   assert.equal(hidden.rating.count, 0);
 });
 
-test('home page is the search page', async () => {
-  const html = await (await fetch(base + '/?lang=ckb')).text();
+test('the clinics page is a search page', async () => {
+  const html = await (await fetch(base + '/clinics?lang=ckb')).text();
   assert.match(html, /id="searchForm"/);
   assert.match(html, /dir="rtl"/);
   assert.equal((await fetch(base + '/static/vendor/leaflet/leaflet.js')).status, 200);

@@ -117,3 +117,35 @@ export const MOOD_ART = {
     <g transform="translate(300 60) rotate(20)"><rect width="22" height="120" rx="6" fill="#B5674D"/><g stroke="#B5674D" stroke-width="5">${Array.from({ length: 8 }, (_, i) => `<path d="M22 ${10 + i * 14}h22"/>`).join('')}</g></g>
     <circle cx="190" cy="92" r="10" fill="#fff" opacity=".7"/>`)
 };
+
+// Tall pictures for the three big choices on the home page, until real photos are added.
+const doorSvg = (bg, inner) => `<svg viewBox="0 0 300 420" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false"><rect width="300" height="420" fill="${bg}"/>${inner}</svg>`;
+export const DOOR_ART = {
+  clinic: doorSvg('#CFEFE6', `
+    <circle cx="225" cy="150" r="46" fill="#FFC53D"/><circle cx="225" cy="150" r="66" fill="#FFC53D" opacity=".2"/>
+    <path d="M0 330 60 250l40 40 60-90 50 70 40-40 50 60v130H0Z" fill="#0B8F7A" opacity=".35"/>
+    <path d="M0 360 50 320l60 30 60-50 60 40 70-30v130H0Z" fill="#0B8F7A" opacity=".6"/>
+    <rect x="70" y="250" width="130" height="110" rx="12" fill="#fff"/>
+    <path d="M58 258 135 214l77 44Z" fill="#FF6F59"/>
+    <rect x="120" y="290" width="30" height="70" rx="5" fill="#0B8F7A"/>
+    <rect x="84" y="282" width="26" height="22" rx="5" fill="#D7F3EC"/><rect x="160" y="282" width="26" height="22" rx="5" fill="#D7F3EC"/>
+    <rect x="128" y="228" width="14" height="5" rx="2" fill="#fff"/><rect x="132.5" y="223.5" width="5" height="14" rx="2" fill="#fff"/>`),
+  salon: doorSvg('#EFE3D6', `
+    <path d="M60 420V170a90 90 0 0 1 180 0v250Z" fill="#E4D2BE"/>
+    <circle cx="150" cy="190" r="62" fill="#F8EFE6" stroke="#D2AE97" stroke-width="10"/>
+    <rect x="144" y="252" width="12" height="70" rx="6" fill="#D2AE97"/><path d="M105 325h90" stroke="#C3957E" stroke-width="10" stroke-linecap="round"/>
+    <g transform="translate(205 120) rotate(18)"><rect width="18" height="96" rx="5" fill="#B5674D"/><g stroke="#B5674D" stroke-width="4">${Array.from({ length: 7 }, (_, i) => `<path d="M18 ${8 + i * 13}h18"/>`).join('')}</g></g>
+    <g fill="none" stroke="#3B3A36" stroke-width="6" stroke-linecap="round"><circle cx="70" cy="395" r="13"/><circle cx="110" cy="395" r="13"/><path d="M80 385 128 318M100 385 52 318"/></g>
+    ${leaves(270, 300, .9, '#7E9C7F', '#9DB59B')}`),
+  spa: doorSvg('#DCE5D4', `
+    <circle cx="150" cy="150" r="80" fill="#EAF0E3"/>
+    ${leaves(40, 290, 1.1, '#5F7F63', '#7E9C7F')}
+    ${leaves(275, 300, 1, '#7E9C7F', '#9DB59B')}
+    <ellipse cx="150" cy="400" rx="130" ry="18" fill="#C8D3BD"/>
+    <ellipse cx="150" cy="378" rx="62" ry="22" fill="#9C8F7E"/>
+    <ellipse cx="150" cy="342" rx="46" ry="17" fill="#B7A995"/>
+    <ellipse cx="150" cy="313" rx="33" ry="13" fill="#CFC3B0"/>
+    <ellipse cx="150" cy="291" rx="20" ry="9" fill="#E4DACB"/>
+    <path d="M150 264c11-18 29-24 44-22-7 18-25 26-44 22Z" fill="#5F7F63"/>
+    <path d="M150 264c-9-14-24-19-36-17 6 14 20 20 36 17Z" fill="#7E9C7F"/>`)
+};

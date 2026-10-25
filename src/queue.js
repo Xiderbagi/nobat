@@ -177,7 +177,7 @@ const ALLOWED = {
 
 export function setStatus(db, booking, status) {
   if (!(ALLOWED[booking.status] || []).includes(status)) throw new BookingError('badStatus');
-  db.prepare('UPDATE bookings SET status = ? WHERE id = ?').run(status, booking.id);
+  db.prepare(`UPDATE bookings SET status = ?, no_show_at = CASE WHEN ? = 'no_show' THEN datetime('now') ELSE no_show_at END WHERE id = ?`).run(status, status, booking.id);
   return getBooking(db, booking.id);
 }
 

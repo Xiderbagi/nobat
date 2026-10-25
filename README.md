@@ -48,14 +48,24 @@ Until WhatsApp or SMS is set up, nothing is actually sent. Messages are printed 
 - **Reviews:** after a finished visit, the patient's booking page asks them to rate four points (for clinics: waiting time, cleanliness, the doctor, value for money) and leave a comment. Only real visits can be reviewed, once each. Clinics see their reviews under **Reviews**; you can hide abusive ones in the admin screen.
 - **Map tiles** come from OpenStreetMap, which is fine for a small start. When traffic grows, switch to a paid map tile provider (change the address in `public/search.js` and in the security policy in `src/server.js`).
 
-## Clinics, salons and spa: three doors, two worlds
+## The opening page, and the clinic and beauty pages
 
-- The home page (`/`) keeps the search and adds three big doors: **Clinics and doctors**, **Salons and barbers**, and **Spa and wellness**.
-- `/clinics` is the clinic world (fresh teal): only clinic categories and clinics.
-- `/beauty` is the calm world (cream, sage and clay, botanical pictures): Barbers, Spa and wellness and Women's salons photo cards, salon categories and salons only. `/spa` opens it with spa already chosen. Every salon's own booking page uses the same calm look.
-- **Photos:** until you add real photos, the pages show drawings. To add your own (free photos from unsplash.com or pexels.com, or your own), go to **Admin → Website photos** and upload the hero photo for each world and the three beauty cards.
-- **Clinic and salon photos:** each business adds a cover photo, a gallery (up to 12 photos) and an "About" text in **Settings**. The cover shows on their page and in search results.
-- Photos are saved in an `uploads` folder next to the database (`/data/uploads` on Render), so they stay on the disk. Include that folder when you copy backups somewhere else.
+- The opening page (`/`) shows only three big tall pictures, each with its name in bold on it: **Clinics and doctors**, **Salons and barbers**, **Spa and wellness**. Under them: **Cancellation policy** and **Support desk**.
+- `/clinics` is the clinic page (fresh teal) with search, map and clinic categories.
+- `/beauty` is the calm page (cream, sage and clay) for salons, barbers and spa, with Barbers / Spa and wellness / Women's salons picture cards. `/spa` opens it with spa already chosen. Every salon's own booking page uses the same calm look.
+- **Photos:** until you add real photos, the pages show drawings. Go to **Admin → Website photos** to upload your own (free photos from unsplash.com or pexels.com work well).
+- **Clinic and salon photos:** each business adds a cover photo, a gallery (up to 12) and an "About" text in **Settings**.
+- Photos are saved in an `uploads` folder next to the database (`/data/uploads` on Render). Include it when you copy backups somewhere else.
+
+## Cancelling, lateness and no-shows
+
+- **Customers** see the rules in plain words before they book and on their booking link. They can cancel online until **24 hours** before the visit; after that the page shows a **Call us** button with the clinic's phone number (add it in Settings).
+- **Late arrivals:** the clinic holds the time for **15 minutes**. The Today screen shows a **Late** badge after that, so reception can decide to give the time to someone else.
+- **No-shows:** when reception taps **No-show**, the customer gets a polite message saying how many more misses are allowed. After **3** no-shows, online booking stops for that number at that clinic (they can still book by phone). The Today screen shows **Missed 2×** and **Online booking stopped** badges.
+- On a customer's file, staff can tap **Stop online booking**, **Allow online booking again** or **Forgive missed visits**.
+- Each clinic can change the numbers in **Settings → Cancelling, lateness and no-shows** (or stop never), and add its own note.
+- **Admin → No-shows** lists people who missed 2 or more visits anywhere in the last 6 months. You can **ban a number from online booking everywhere on Nobat**, and lift the ban.
+- **Support desk** (`/support`): customers and clinics send you a message; you see it under **Admin → Support** (with a red count of open ones), call them back and mark it done.
 
 ## Your admin screen
 

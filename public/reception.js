@@ -25,7 +25,7 @@
   }
 
   async function setStatus(id, status) {
-    try { await api(`/api/s/bookings/${id}/status`, 'POST', { status }); await load(); } catch (e) { toast(e.message); }
+    try { const r = await api(`/api/s/bookings/${id}/status`, 'POST', { status }); if (r.warned) toast(tr('noShowWarned')); await load(); } catch (e) { toast(e.message); }
   }
 
   function actionsFor(r) {
@@ -39,7 +39,14 @@
 
   function who(r) {
     const name = r.patientId ? el('a', { href: `/app/patients/${r.patientId}` }, el('b', {}, r.name)) : el('b', {}, r.name);
-    return el('td', {}, name, r.phone ? el('div', { class: 'muted small', dir: 'ltr' }, r.phone) : null, r.source === 'walkin' ? el('div', { class: 'muted small' }, tr('walkin')) : null);
+    // Warnings at a glance: late now, missed visits before, online booking stopped.
+    const flags = [
+      r.late ? el('span', { class: 'pill warn' }, '⏱ ' + tr('late')) : null,
+      r.noShows ? el('span', { class: 'pill bad' }, tr('missedN', { n: r.noShows })) : null,
+      r.stopped ? el('span', { class: 'pill bad' }, tr('bookingStopped')) : null
+    ].filter(Boolean);
+    return el('td', {}, name, r.phone ? el('div', { class: 'muted small', dir: 'ltr' }, r.phone) : null, r.source === 'walkin' ? el('div', { class: 'muted small' }, tr('walkin')) : null,
+      flags.length ? el('div', { class: 'flags' }, flags) : null);
   }
 
   function render() {

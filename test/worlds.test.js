@@ -27,12 +27,27 @@ after(() => { server.close(); rmSync(uploads, { recursive: true, force: true });
 
 const html = async (path) => (await fetch(base + path)).text();
 
-test('home page has doors to the clinics page, the beauty page and spa', async () => {
+test('the opening page has only the three big choices, plus policy and support links', async () => {
   const page = await html('/?lang=en');
+  assert.equal((page.match(/class="door /g) || []).length, 3);
   assert.ok(page.includes('href="/clinics?lang=en"'));
   assert.ok(page.includes('href="/beauty?lang=en"'));
-  assert.ok(page.includes('href="/beauty?cat=spa&amp;lang=en"') || page.includes('href="/beauty?cat=spa&lang=en"'));
-  assert.ok(page.includes('Spa and wellness'));
+  assert.ok(page.includes('href="/beauty?cat=spa&amp;lang=en"'));
+  assert.ok(page.includes('<b>Spa and wellness</b>'));
+  assert.ok(page.includes('href="/policy?lang=en"') && page.includes('href="/support?lang=en"'));
+  assert.ok(!page.includes('id="searchForm"'));
+});
+
+test('cancellation policy and support desk pages work, and a support message reaches the admin', async () => {
+  assert.ok((await html('/policy?lang=en')).includes('Cancellation policy'));
+  assert.ok((await html('/support?lang=ar')).includes('مكتب الدعم'));
+  const post = (body) => fetch(base + '/support', { method: 'POST', redirect: 'manual', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(body) });
+  assert.equal((await post({ name: '', phone: '0750 123 4567', message: 'hi', lang: 'en' })).status, 400);
+  const ok = await post({ name: 'Aram', phone: '0750 123 4567', topic: 'blocked', message: 'My booking stopped', lang: 'en' });
+  assert.equal(ok.status, 303);
+  const row = db.prepare('SELECT * FROM support_requests').get();
+  assert.equal(row.phone, '+9647501234567');
+  assert.equal(row.topic, 'blocked');
 });
 
 test('clinics and beauty pages each show only their own kind', async () => {

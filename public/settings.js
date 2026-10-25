@@ -122,6 +122,23 @@
     return card;
   }
 
+  // Cancelling, lateness and no-show rules: three simple choices with sensible defaults.
+  function rulesCard() {
+    const c = S.clinic;
+    const select = (id, values, current, label) => el('select', { id }, values.map((v) => el('option', { value: v, selected: v === current }, label(v))));
+    return el('form', { class: 'card stack', onsubmit: (e) => {
+      e.preventDefault();
+      save('/api/s/policy', 'PUT', { cancelHours: val('r_cancel').value, lateMinutes: val('r_late').value, noShowLimit: val('r_noshow').value, note: val('r_note').value });
+    } },
+      el('h2', {}, tr('rulesTitle')), el('p', { class: 'muted small' }, tr('rulesHint')),
+      el('div', { class: 'grid2' },
+        field(tr('cancelHoursLabel'), select('r_cancel', S.rules.cancelHours, c.cancel_hours, (h) => (h ? tr('hoursBefore', { h }) : tr('anyTime')))),
+        field(tr('lateLabel'), select('r_late', S.rules.lateMinutes, c.late_minutes, (m) => tr('minutesN', { m }))),
+        field(tr('noShowLabel'), select('r_noshow', S.rules.noShowLimits, c.noshow_limit, (n) => (n ? tr('noShowsN', { n }) : tr('neverStop'))))),
+      field(tr('policyNoteLabel'), el('textarea', { id: 'r_note', rows: 2, maxlength: 500, placeholder: tr('policyNotePh') }, c.policy_note || '')),
+      el('button', { class: 'btn primary' }, tr('save')));
+  }
+
   function servicesCard() {
     const row = (s) => {
       const p = `s${s.id || 'new'}_`;
@@ -162,7 +179,7 @@
   function render() {
     const blank = { id: null, name: '', specialty: '', fee_iqd: 25000, mode: 'queue', slot_minutes: 15, avg_minutes: 10, daily_limit: 40, active: 1,
       schedules: [6, 0, 1, 2, 3, 4].map((wd) => ({ weekday: wd, start_time: salon ? '10:00' : '16:00', end_time: salon ? '20:00' : '21:00' })) };
-    root.replaceChildren(...[el('h1', {}, tr('settings')), clinicForm(), photosCard(), salon ? servicesCard() : null,
+    root.replaceChildren(...[el('h1', {}, tr('settings')), clinicForm(), rulesCard(), photosCard(), salon ? servicesCard() : null,
       el('h2', { class: 'section' }, tr('providers')), ...S.doctors.map(doctorForm), doctorForm(blank), usersCard()].filter(Boolean));
   }
 

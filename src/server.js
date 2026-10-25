@@ -17,6 +17,7 @@ import * as views from './views.js';
 import { adminRouter } from './admin.js';
 import { search, categoriesFor, ratingSummary, reviewPoints } from './directory.js';
 import { isCategory } from './categories.js';
+import { CANCEL_HOURS, LATE_MINUTES, NOSHOW_LIMITS, bookingBlock, cancelInfo, isLate, noShowCount, patientStanding, policyOf, startsAt } from './policy.js';
 import { GALLERY_LIMIT, MAX_BYTES, clinicPhotos, isJpeg, isSafeName, removeFile, saveJpeg, sitePhotos, uploadsDir } from './uploads.js';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -75,6 +76,18 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     send(db, { clinicId: b.clinic_id, bookingId: b.id, to, kind, body, channel: b.patient_channel });
   }
 
+  // A polite message after a no-show, saying how many more misses stop online booking. Returns whether one was sent.
+  function noShowMessage(b) {
+    if (!b.patient_phone || b.clinic_status === 'off') return false;
+    const clinic = db.prepare('SELECT * FROM clinics WHERE id = ?').get(b.clinic_id);
+    const { noShowLimit, phone } = policyOf(clinic);
+    const n = noShowCount(db, b.patient_id);
+    const vars = { clinic: b.clinic_name, link: link(b), n, left: noShowLimit - n, phone: phone || link(b) };
+    const key = !noShowLimit ? 'msgNoShow' : n >= noShowLimit ? 'msgNoShowBlocked' : 'msgNoShowWarn';
+    send(db, { clinicId: b.clinic_id, bookingId: b.id, to: b.patient_phone, kind: 'no-show', body: t(b.lang, key, vars), channel: b.patient_channel });
+    return true;
+  }
+
   // ---------- Install as an app (home screen icon) ----------
   const ICONS = [
     { src: '/static/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -106,7 +119,29 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const cat = cats.some((c) => c.key === req.query.cat && (world === 'all' || c.kind === world)) ? req.query.cat : '';
     res.send(views.directoryPage(lang, cats, { world, photos: sitePhotos(db), cat }));
   };
-  app.get('/', worldPage('all'));
+  app.get('/', (req, res) => {
+    const lang = langOf(req); rememberLang(req, res, lang);
+    res.send(views.homePage(lang, sitePhotos(db)));
+  });
+  app.get('/policy', (req, res) => { const lang = langOf(req); rememberLang(req, res, lang); res.send(views.policyPage(lang)); });
+  app.get('/support', (req, res) => { const lang = langOf(req); rememberLang(req, res, lang); res.send(views.supportPage(lang, req.query.sent === '1')); });
+
+  // Support desk: a message for you, seen in Admin → Support. A few per hour from one address, to stop spam.
+  const supportHits = new Map();
+  app.post('/support', express.urlencoded({ extended: false, limit: '10kb' }), (req, res) => {
+    const lang = pickLang(req.body.lang);
+    const now = Date.now();
+    const hits = (supportHits.get(req.ip) || []).filter((x) => now - x < 3600e3);
+    const name = String(req.body.name || '').trim().slice(0, 60);
+    const message = String(req.body.message || '').trim().slice(0, 2000);
+    const phone = normalizePhone(req.body.phone);
+    const topic = ['cancel', 'blocked', 'clinic', 'join', 'other'].includes(req.body.topic) ? req.body.topic : 'other';
+    if (!name || !message || !phone) return res.status(400).send(views.supportPage(lang).replace('<form class="card stack"', `<p class="err card" role="alert">${t(lang, 'supportNeed')}</p><form class="card stack"`));
+    if (hits.length >= 5) return res.redirect(303, `/support?sent=1&lang=${lang}`);
+    supportHits.set(req.ip, [...hits, now]);
+    db.prepare('INSERT INTO support_requests (name, phone, topic, message, lang) VALUES (?, ?, ?, ?, ?)').run(name, phone, topic, message, lang);
+    res.redirect(303, `/support?sent=1&lang=${lang}`);
+  });
   app.get('/clinics', worldPage('clinic'));
   app.get('/beauty', worldPage('salon'));
   app.get(['/salons', '/spa'], (req, res) => res.redirect(req.path === '/spa' ? '/beauty?cat=spa' : '/beauty'));
@@ -150,7 +185,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const b = getBookingByToken(db, req.params.token);
     if (!b) return res.status(404).send('Not found');
     const lang = req.query.lang ? langOf(req) : b.lang; rememberLang(req, res, lang);
-    res.send(views.ticketPage(b, lang, reviewPoints(b.clinic_kind, lang)));
+    res.send(views.ticketPage(b, lang, reviewPoints(b.clinic_kind, lang), db.prepare('SELECT * FROM clinics WHERE id = ?').get(b.clinic_id)));
   });
 
   // ---------- Patient API ----------
@@ -228,6 +263,8 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     if (!doctor || !isIsoDate(date) || (doctor.mode === 'time' && !isClock(time))) return res.status(400).json({ error: 'error' });
     const err = contactError(req.body, phone);
     if (err) return res.status(400).json({ error: err });
+    const block = bookingBlock(db, db.prepare('SELECT * FROM clinics WHERE id = ?').get(doctor.clinic_id), phone);
+    if (block) return res.status(403).json({ error: block === 'banned' ? 'bookingBanned' : 'bookingBlocked' });
     try {
       const b = createBooking(db, { doctor, date, time, name, phone, lang, channel: req.body.channel });
       notifyBooking(b, 'confirmed');
@@ -247,6 +284,8 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     if (!serviceIds.length) return res.status(400).json({ error: 'needService' });
     const err = contactError(req.body, phone);
     if (err) return res.status(400).json({ error: err });
+    const block = bookingBlock(db, clinic, phone);
+    if (block) return res.status(403).json({ error: block === 'banned' ? 'bookingBanned' : 'bookingBlocked' });
     try {
       const b = createSalonBooking(db, { clinicId: clinic.id, staffId: Number(req.body.staffId) || null, serviceIds, date, time, name: String(req.body.name).trim().slice(0, 60), phone, lang: pickLang(req.body.lang), channel: req.body.channel });
       notifyBooking(b, 'confirmed');
@@ -261,7 +300,13 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const b = getBookingByToken(db, req.params.token);
     if (!b) return res.status(404).json({ error: 'error' });
     const reviewed = Boolean(db.prepare('SELECT 1 FROM reviews WHERE booking_id = ?').get(b.id));
-    res.json({ ...ticketStatus(db, b), salon: b.clinic_kind === 'salon', staff: b.doctor_name, services: b.service_names, canReview: b.status === 'done' && !reviewed && Boolean(b.patient_id), reviewed });
+    const clinic = db.prepare('SELECT * FROM clinics WHERE id = ?').get(b.clinic_id);
+    const c = cancelInfo(db, b, clinic);
+    const p = policyOf(clinic);
+    const start = startsAt(db, b);
+    res.json({ ...ticketStatus(db, b), salon: b.clinic_kind === 'salon', staff: b.doctor_name, services: b.service_names, canReview: b.status === 'done' && !reviewed && Boolean(b.patient_id), reviewed,
+      canCancel: c.canCancel, cancelClosed: c.tooLate, cancelUntil: localParts(new Date(c.deadline)), phone: p.phone, lateMinutes: p.lateMinutes,
+      started: b.status === 'booked' && Boolean(b.time) && Date.now() >= start && Date.now() <= start + p.lateMinutes * 60e3 });
   });
 
   // A review can only come from a finished visit, once per visit.
@@ -284,7 +329,8 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
   app.post('/api/p/t/:token/cancel', (req, res) => {
     const b = getBookingByToken(db, req.params.token);
     if (!b) return res.status(404).json({ error: 'error' });
-    if (!['booked', 'arrived'].includes(b.status)) return res.status(409).json({ error: 'error' });
+    if (b.status !== 'booked') return res.status(409).json({ error: 'error' });
+    if (!cancelInfo(db, b, db.prepare('SELECT * FROM clinics WHERE id = ?').get(b.clinic_id)).canCancel) return res.status(409).json({ error: 'cancelTooLate' });
     setStatus(db, b, 'cancelled');
     res.json({ ok: true });
   });
@@ -355,7 +401,9 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     res.json({ ok: true });
   });
 
-  const rowOut = (b) => ({
+  const rowOut = (clinic) => (b) => ({
+    late: isLate(db, b, clinic), noShows: noShowCount(db, b.patient_id),
+    stopped: Boolean(b.patient_id) && bookingBlock(db, clinic, b.patient_phone) !== null,
     id: b.id, queueNo: b.queue_no, time: b.time, duration: b.duration_min, status: b.status, source: b.source, name: b.patient_name,
     phone: b.patient_phone ? displayPhone(b.patient_phone) : null, patientId: b.patient_id, staff: b.doctor_name, services: b.service_names
   });
@@ -363,10 +411,10 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
   api.get('/day', (req, res) => {
     const clinic = clinicOf(req);
     const date = isIsoDate(req.query.date) ? req.query.date : localParts().date;
-    if (clinic.kind === 'salon') return res.json({ date, rows: salonDay(db, clinic.id, date).map(rowOut), services: activeServices(db, clinic.id) });
+    if (clinic.kind === 'salon') return res.json({ date, rows: salonDay(db, clinic.id, date).map(rowOut(clinic)), services: activeServices(db, clinic.id) });
     const doctor = ownDoctor(req, req.query.doctorId);
     if (!doctor) return res.status(404).json({ error: 'addProviderFirst' });
-    res.json({ date, doctor: { id: doctor.id, name: doctor.name, mode: doctor.mode }, rows: dayList(db, doctor.id, date).map(rowOut) });
+    res.json({ date, doctor: { id: doctor.id, name: doctor.name, mode: doctor.mode }, rows: dayList(db, doctor.id, date).map(rowOut(clinic)) });
   });
 
   api.post('/next', (req, res) => {
@@ -382,8 +430,9 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const b = ownBooking(req, req.params.id);
     if (!b) return res.status(404).json({ error: 'errGeneric' });
     try {
-      setStatus(db, b, String(req.body.status));
-      res.json({ ok: true });
+      const after = setStatus(db, b, String(req.body.status));
+      const warned = after.status === 'no_show' && b.status !== 'no_show' ? noShowMessage(after) : false;
+      res.json({ ok: true, warned });
     } catch (e) {
       if (e instanceof BookingError) return res.status(409).json({ error: 'errGeneric' });
       throw e;
@@ -437,8 +486,20 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
       LEFT JOIN users u ON u.id = n.author_id WHERE n.patient_id = ? ORDER BY n.id DESC`).all(p.id) : null;
     res.json({
       patient: { id: p.id, name: p.name, phone: displayPhone(p.phone), channel: p.channel, birth_year: p.birth_year, allergies: canReadNotes(req) ? p.allergies : null, notes: canReadNotes(req) ? p.notes : null, follow_up_date: p.follow_up_date },
-      visits, notes, canReadNotes: canReadNotes(req)
+      visits, notes, canReadNotes: canReadNotes(req), standing: patientStanding(db, clinicOf(req), p)
     });
+  });
+
+  // Stop or allow online booking for one person, or forgive their missed visits (the count starts again).
+  api.post('/patients/:id/booking', (req, res) => {
+    const p = ownPatient(req, req.params.id);
+    if (!p) return res.status(404).json({ error: 'errGeneric' });
+    const action = String(req.body.action);
+    if (action === 'stop') db.prepare('UPDATE patients SET blocked = 1 WHERE id = ?').run(p.id);
+    else if (action === 'allow') db.prepare("UPDATE patients SET blocked = 0, noshow_cleared_at = datetime('now') WHERE id = ?").run(p.id);
+    else if (action === 'forgive') db.prepare("UPDATE patients SET noshow_cleared_at = datetime('now') WHERE id = ?").run(p.id);
+    else return res.status(400).json({ error: 'errGeneric' });
+    res.json({ ok: true, standing: patientStanding(db, clinicOf(req), ownPatient(req, p.id)) });
   });
 
   api.put('/patients/:id', (req, res) => {
@@ -473,13 +534,13 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
 
   // ---------- Owner settings ----------
   api.get('/settings', requireOwner, (req, res) => {
-    const clinic = db.prepare('SELECT id, name, slug, city, address, phone, kind, lat, lng, tags, listed, about FROM clinics WHERE id = ?').get(req.user.clinic_id);
+    const clinic = db.prepare('SELECT id, name, slug, city, address, phone, kind, lat, lng, tags, listed, about, cancel_hours, late_minutes, noshow_limit, policy_note FROM clinics WHERE id = ?').get(req.user.clinic_id);
     const doctors = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? ORDER BY active DESC, name').all(clinic.id)
       .map((d) => ({ ...d, schedules: db.prepare('SELECT weekday, start_time, end_time FROM schedules WHERE doctor_id = ? ORDER BY weekday, start_time').all(d.id),
         serviceIds: db.prepare('SELECT service_id FROM staff_services WHERE doctor_id = ?').all(d.id).map((r) => r.service_id) }));
     const users = db.prepare('SELECT id, name, email, role, doctor_id FROM users WHERE clinic_id = ? ORDER BY role, name').all(clinic.id);
     const services = db.prepare('SELECT * FROM services WHERE clinic_id = ? ORDER BY active DESC, name').all(clinic.id);
-    res.json({ clinic, doctors, users, services, baseUrl, photos: clinicPhotos(db, clinic.id), galleryLimit: GALLERY_LIMIT, categories: categoriesFor(req.user.lang).filter((c) => c.kind === clinic.kind) });
+    res.json({ clinic, doctors, users, services, baseUrl, photos: clinicPhotos(db, clinic.id), galleryLimit: GALLERY_LIMIT, rules: { cancelHours: CANCEL_HOURS, lateMinutes: LATE_MINUTES, noShowLimits: NOSHOW_LIMITS }, categories: categoriesFor(req.user.lang).filter((c) => c.kind === clinic.kind) });
   });
 
   api.put('/clinic', requireOwner, (req, res) => {
@@ -490,6 +551,13 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const tags = (Array.isArray(req.body.tags) ? req.body.tags : []).filter(isCategory).slice(0, 8).join(',');
     db.prepare('UPDATE clinics SET name = ?, city = ?, address = ?, phone = ?, lat = ?, lng = ?, tags = ?, listed = ?, about = ? WHERE id = ?')
       .run(f('name', 80), f('city', 40), f('address', 120), f('phone', 20), hasPlace ? lat : null, hasPlace ? lng : null, tags, req.body.listed === false ? 0 : 1, String(req.body.about || '').trim().slice(0, 1500), req.user.clinic_id);
+    res.json({ ok: true });
+  });
+
+  api.put('/policy', requireOwner, (req, res) => {
+    const pick = (list, v, d) => (list.includes(Number(v)) ? Number(v) : d);
+    db.prepare('UPDATE clinics SET cancel_hours = ?, late_minutes = ?, noshow_limit = ?, policy_note = ? WHERE id = ?')
+      .run(pick(CANCEL_HOURS, req.body.cancelHours, 24), pick(LATE_MINUTES, req.body.lateMinutes, 15), pick(NOSHOW_LIMITS, req.body.noShowLimit, 3), String(req.body.note || '').trim().slice(0, 500), req.user.clinic_id);
     res.json({ ok: true });
   });
 

@@ -2,7 +2,10 @@
   const D = JSON.parse(document.getElementById('data').textContent);
   const T = D.t;
   const box = document.getElementById('ticket');
-  const cancelBtn = document.getElementById('cancel');
+  const cancelBox = document.getElementById('cancelBox');
+  const cancelNote = document.getElementById('cancelNote');
+  const cancelBtns = document.getElementById('cancelBtns');
+  const callBtn = document.getElementById('callBtn');
   let timer;
 
   const ltr = (text) => { const b = document.createElement('bdi'); b.dir = 'ltr'; b.textContent = text; return b; };
@@ -15,7 +18,35 @@
       el('p', 'eta', line),
       el('div', 'nums', el('div', '', el('span', '', T.time), el('b', 'ltr', s.time || '–')), el('div', '', el('span', '', T.with), el('b', 'small-b', s.staff))),
       el('div', 'meta', `${T.date}: `, ltr(s.date), s.services ? ` · ${s.services}` : ''));
-    cancelBtn.hidden = !['booked', 'arrived'].includes(s.status);
+    cancelArea(s);
+  }
+
+  // Cancel online until the clinic's deadline; after that, a button to call them.
+  let asking = false;
+  function cancelArea(s) {
+    cancelBox.hidden = s.status !== 'booked';
+    if (cancelBox.hidden || asking) return;
+    const lines = [];
+    if (s.started) lines.push(el('b', '', T.lateNow.replace('{m}', s.lateMinutes)), document.createElement('br'));
+    if (s.canCancel) lines.push(T.cancelUntil.split('{when}')[0], ltr(`${s.cancelUntil.date} ${s.cancelUntil.time}`), T.cancelUntil.split('{when}')[1] || '');
+    else if (s.cancelClosed) lines.push(T.cancelClosed);
+    cancelNote.replaceChildren(...lines);
+    cancelBtns.hidden = !s.canCancel;
+    if (callBtn) callBtn.hidden = s.canCancel && !s.started;
+    if (s.canCancel) cancelBtns.replaceChildren(button('btn ghost', T.cancel, () => askCancel(s)));
+  }
+  function button(cls, text, onclick) { const b = el('button', cls, text); b.type = 'button'; b.addEventListener('click', onclick); return b; }
+  function askCancel(s) {
+    asking = true;
+    cancelNote.replaceChildren(el('b', '', T.cancelAsk));
+    cancelBtns.replaceChildren(
+      button('btn danger', T.cancelSure, async () => {
+        const res = await fetch(`/api/p/t/${D.token}/cancel`, { method: 'POST' });
+        asking = false;
+        if (!res.ok) { const e = await res.json().catch(() => ({})); cancelNote.replaceChildren(T[e.error] || T.error); }
+        refresh();
+      }),
+      button('btn ghost', T.keepIt, () => { asking = false; cancelArea(s); }));
   }
 
   function render(s) {
@@ -33,7 +64,7 @@
     else line = `${s.ahead} ${T.ahead} · ${T.aboutMin.replace('{m}', s.minutes)}`;
     const meta = el('div', 'meta', `${T.date}: `, ltr(s.date), s.time ? ` · ${T.time}: ` : '', s.time ? ltr(s.time) : '');
     box.replaceChildren(nums, el('p', 'eta', line), meta);
-    cancelBtn.hidden = !['booked', 'arrived'].includes(s.status);
+    cancelArea(s);
     if (['done', 'cancelled'].includes(s.status)) clearInterval(timer);
   }
 
@@ -80,13 +111,6 @@
       if (res.ok) { const s = await res.json(); render(s); showReview(s); }
     } catch { /* offline: try again on the next tick */ }
   }
-
-  let confirming = false;
-  cancelBtn.addEventListener('click', async () => {
-    if (!confirming) { confirming = true; cancelBtn.textContent = T.cancel + ' ?'; cancelBtn.classList.add('danger'); return; }
-    const res = await fetch(`/api/p/t/${D.token}/cancel`, { method: 'POST' });
-    if (res.ok) refresh();
-  });
 
   refresh();
   timer = setInterval(refresh, 15000);

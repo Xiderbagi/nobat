@@ -47,8 +47,26 @@
       loose.map(note));
   }
 
+  // Missed visits and online booking: stop, allow again, or forgive with one tap.
+  function standingCard() {
+    const s = F.standing;
+    const act = (action) => async () => {
+      try { F.standing = (await api(`/api/s/patients/${F.patient.id}/booking`, 'POST', { action })).standing; toast(tr('saved')); render(); } catch (e) { toast(e.message); }
+    };
+    const btn = (label, action, cls = 'btn ghost small') => el('button', { type: 'button', class: cls, onclick: act(action) }, tr(label));
+    return el('section', { class: 'card stack standing' + (s.blocked || s.banned ? ' stopped' : s.noShows ? ' warned' : '') },
+      el('h2', {}, tr('standingTitle')),
+      el('p', {}, s.noShows === 1 ? tr('standingMissedOne') : s.noShows ? tr('standingMissed', { n: s.noShows }) : tr('standingOk')),
+      s.banned ? el('p', { class: 'muted small' }, tr('standingBanned')) : null,
+      s.blocked ? el('p', {}, el('b', {}, tr('standingStopped'))) : s.limit ? el('p', { class: 'muted small' }, tr('standingLimit', { limit: s.limit })) : null,
+      el('div', { class: 'row' },
+        s.blocked ? btn('allowBooking', 'allow', 'btn primary small') : btn('stopBooking', 'stop'),
+        s.noShows && !s.blocked ? btn('forgive', 'forgive') : null),
+      s.noShows && !s.blocked ? el('p', { class: 'muted small' }, tr('forgiveHint')) : null);
+  }
+
   function render() {
-    root.replaceChildren(el('a', { href: '/app/patients', class: 'back' }, tr('allPatients')), el('h1', {}, F.patient.name), el('div', { class: 'split' }, visitsCard(), details()));
+    root.replaceChildren(el('a', { href: '/app/patients', class: 'back' }, tr('allPatients')), el('h1', {}, F.patient.name), standingCard(), el('div', { class: 'split' }, visitsCard(), details()));
   }
 
   load().catch((e) => toast(e.message));

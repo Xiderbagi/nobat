@@ -439,3 +439,44 @@ body.beauty .cover { background: linear-gradient(135deg, #5f7f63, #7e9c7f 60%, #
 .result-photo img { width: 100%; aspect-ratio: 16 / 7; max-height: 200px; object-fit: cover; border-radius: 14px; display: block; }
 @media (prefers-reduced-motion: reduce) { .world-card, .mood, .mood-pic img, .mood-pic svg { transition: none; } }
 body.beauty .av { filter: saturate(.55); }
+
+/* Cancelling, lateness and no-show rules */
+.policy ul { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 10px; }
+.policy li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; align-items: start; }
+.cancelbox #cancelNote { line-height: 1.6; }
+.flags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.standing.warned { border-color: var(--warn); background: var(--warn-soft); }
+.standing.stopped { border-color: var(--bad); background: var(--bad-soft); }
+
+/* Opening page: three tall pictures side by side, the name in bold on each picture */
+.home { padding-top: clamp(16px, 4vw, 40px); }
+.doors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(12px, 2vw, 22px); }
+.door { position: relative; display: block; height: clamp(420px, 68vh, 640px); border-radius: 30px; overflow: hidden; text-decoration: none; color: #fff; box-shadow: 0 18px 40px rgb(16 34 58 / .16); isolation: isolate; transition: transform .2s ease, box-shadow .2s ease; }
+.door:hover { transform: translateY(-4px); box-shadow: 0 26px 50px rgb(16 34 58 / .22); }
+.door:focus-visible { outline: 4px solid var(--accent); outline-offset: 4px; }
+.door-pic { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; z-index: -2; transition: transform .6s ease; }
+.door-pic svg { width: 100%; height: 100%; display: block; }
+.door:hover .door-pic { transform: scale(1.05); }
+.door::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgb(0 0 0 / .62) 0%, rgb(0 0 0 / .28) 32%, rgb(0 0 0 / 0) 55%); }
+.door-text { position: absolute; inset-inline: 0; top: 0; padding: clamp(20px, 3vw, 32px); display: grid; gap: 8px; justify-items: start; }
+.door-text b { font-size: clamp(26px, 3.2vw, 40px); font-weight: 900; line-height: 1.1; letter-spacing: -.01em; text-shadow: 0 2px 14px rgb(0 0 0 / .35); }
+.door-text > span:last-child { font-size: clamp(14px, 1.5vw, 17px); font-weight: 600; opacity: .95; text-shadow: 0 1px 8px rgb(0 0 0 / .4); }
+.door-ic { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: rgb(255 255 255 / .22); backdrop-filter: blur(6px); border: 1.5px solid rgb(255 255 255 / .5); }
+.door-ic svg { width: 26px; height: 26px; }
+.door.clinic .door-ic { background: rgb(11 143 122 / .55); }
+.door.salon .door-ic { background: rgb(181 103 77 / .55); }
+.door.spa .door-ic { background: rgb(95 127 99 / .6); }
+@media (max-width: 720px) {
+  .doors { grid-template-columns: minmax(0, 1fr); }
+  .door { height: 34vh; min-height: 210px; border-radius: 24px; }
+}
+@media (prefers-reduced-motion: reduce) { .door, .door-pic { transition: none; } }
+
+/* Links at the bottom of public pages */
+.footlinks { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
+.footlinks a { text-decoration: none; color: var(--ink); background: var(--surface); border: 1px solid var(--line); padding: 8px 16px; border-radius: 999px; font-weight: 700; font-size: 14px; }
+.footlinks a:hover { border-color: var(--accent); color: var(--accent); }
+.footlinks a:last-child { background: transparent; border-color: transparent; color: var(--muted); font-weight: 600; }
+.info h2 { font-size: 19px; }
+.faq summary { cursor: pointer; font-weight: 700; }
+.faq p { margin-top: 8px; }

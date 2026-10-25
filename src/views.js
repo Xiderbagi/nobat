@@ -2,7 +2,7 @@ import { esc } from './util.js';
 import { LANGS, RTL, t, dictFor } from './i18n.js';
 import { STAFF_LANGS, staffDict, st } from './staff-i18n.js';
 import { categoryName } from './categories.js';
-import { BEAUTY_ART, CATEGORY_ICONS, HERO_ART, MOOD_ART, avatarTone } from './icons.js';
+import { BEAUTY_ART, CATEGORY_ICONS, DOOR_ART, HERO_ART, MOOD_ART, avatarTone } from './icons.js';
 
 const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#ffc53d"/></svg>';
 
@@ -63,7 +63,6 @@ export function reviewsBlock(lang, summary, points, reviews) {
 
 // The home page and its two "worlds": /clinics (fresh teal) and /beauty (calm botanical, for salons, barbers and spa).
 const WORLD_PATH = { all: '/', clinic: '/clinics', salon: '/beauty' };
-const slice = (svg) => svg.replace('<svg ', '<svg preserveAspectRatio="xMidYMid slice" ');
 const photoOr = (url, fallback, cls = 'hero-photo') => (url ? `<img class="${cls}" src="${esc(url)}" alt="" loading="lazy">` : fallback);
 
 function worldNav(lang, world) {
@@ -71,9 +70,66 @@ function worldNav(lang, world) {
   return `<nav class="worldnav" aria-label="Nobat">${link('all', 'homeLink')}${link('clinic', 'doctorsTab')}${link('salon', 'salonsTab')}</nav>`;
 }
 
-function worldDoor(lang, cls, href, pic, title, lede) {
-  return `<a class="world-card ${cls}" href="${href}"><span class="world-pic">${pic}</span>
-    <span class="world-text"><b>${esc(t(lang, title))}</b><span>${esc(t(lang, lede))}</span><span class="btn primary">${esc(t(lang, 'explore'))}</span></span></a>`;
+// Cancellation policy, support desk and the staff sign-in, at the bottom of public pages.
+function footLinks(lang) {
+  return `<nav class="footlinks" aria-label="Nobat"><a href="/policy?lang=${lang}">${esc(t(lang, 'policyLink'))}</a><a href="/support?lang=${lang}">${esc(t(lang, 'supportLink'))}</a><a href="/login">${esc(t(lang, 'staffSignIn'))}</a></nav>`;
+}
+
+function simpleHeader(lang, path) {
+  return `<header class="top"><div class="wrap row">
+    <a class="brand" href="/?lang=${lang}">${LOGO}<span><b>Nobat</b><small>${esc(t(lang, 'homeTagline'))}</small></span></a>
+    ${langSwitch(lang, path)}</div></header>`;
+}
+
+// The opening page: just the three big choices, each a tall picture with its name on it.
+export function homePage(lang, photos = {}) {
+  const door = (cls, href, photo, art, title, line, icon) => `<a class="door ${cls}" href="${href}">
+      ${photo ? `<img src="${esc(photo)}" alt="" class="door-pic">` : `<span class="door-pic">${art}</span>`}
+      <span class="door-text"><span class="door-ic" aria-hidden="true">${icon}</span><b>${esc(t(lang, title))}</b><span>${esc(t(lang, line))}</span></span></a>`;
+  const body = `${simpleHeader(lang, '/')}
+  <main class="wrap stack home">
+    <section class="doors">
+      ${door('clinic', `/clinics?lang=${lang}`, photos.clinics_hero, DOOR_ART.clinic, 'clinicsWorld', 'doorClinics', CATEGORY_ICONS.gp.svg)}
+      ${door('salon', `/beauty?lang=${lang}`, photos.beauty_salon, DOOR_ART.salon, 'beautyWorld', 'doorSalons', CATEGORY_ICONS.barber_men.svg)}
+      ${door('spa', `/beauty?cat=spa&amp;lang=${lang}`, photos.beauty_spa, DOOR_ART.spa, 'spaWorld', 'doorSpa', CATEGORY_ICONS.spa.svg)}
+    </section>
+    ${footLinks(lang)}
+  </main>`;
+  return page({ title: 'Nobat', lang, body });
+}
+
+export function policyPage(lang) {
+  const items = [['🗓️', 'pHowCancelT', 'pHowCancel'], ['⏱️', 'pLateT', 'pLate'], ['⚠️', 'pNoShowT', 'pNoShow'], ['💚', 'pFreeT', 'pFree']];
+  const body = `${simpleHeader(lang, '/policy')}
+  <main class="wrap narrow stack">
+    <h1>${esc(t(lang, 'policyPageTitle'))}</h1><p class="lede muted">${esc(t(lang, 'policyPageIntro'))}</p>
+    ${items.map(([icon, h, p]) => `<section class="card stack info"><h2><span aria-hidden="true">${icon}</span> ${esc(t(lang, h))}</h2><p>${esc(t(lang, p))}</p></section>`).join('')}
+    <a class="btn primary" href="/support?lang=${lang}">${esc(t(lang, 'supportLink'))}</a>
+    ${footLinks(lang)}
+  </main>`;
+  return page({ title: `${t(lang, 'policyPageTitle')} · Nobat`, lang, body });
+}
+
+export function supportPage(lang, sent = false) {
+  const faq = [['pHowCancelT', 'pHowCancel'], ['pLateT', 'pLate'], ['faqBlockedT', 'pNoShow'], ['faqJoinT', 'faqJoin']];
+  const topics = [['cancel', 'tCancel'], ['blocked', 'tBlocked'], ['clinic', 'tClinic'], ['join', 'tJoin'], ['other', 'tOther']];
+  const body = `${simpleHeader(lang, '/support')}
+  <main class="wrap narrow stack">
+    <h1>${esc(t(lang, 'supportTitle'))}</h1><p class="lede muted">${esc(t(lang, 'supportIntro'))}</p>
+    ${sent ? `<p class="note ok card" role="status">✅ ${esc(t(lang, 'supportThanks'))}</p>` : `<form class="card stack" method="post" action="/support">
+      <h2>${esc(t(lang, 'contactTitle'))}</h2>
+      <input type="hidden" name="lang" value="${lang}">
+      <label>${esc(t(lang, 'name'))}<input name="name" maxlength="60" required autocomplete="name"></label>
+      <label>${esc(t(lang, 'phone'))}<input name="phone" type="tel" inputmode="tel" dir="ltr" placeholder="0750 123 4567" maxlength="20" required autocomplete="tel"><span class="muted small">${esc(t(lang, 'supportPhoneHint'))}</span></label>
+      <label>${esc(t(lang, 'topicLabel'))}<select name="topic">${topics.map(([v, k]) => `<option value="${v}">${esc(t(lang, k))}</option>`).join('')}</select></label>
+      <label>${esc(t(lang, 'yourMessage'))}<textarea name="message" rows="4" maxlength="2000" required></textarea></label>
+      <button class="btn primary big">${esc(t(lang, 'sendMsg'))}</button>
+    </form>`}
+    <h2>${esc(t(lang, 'faqTitle'))}</h2>
+    ${faq.map(([q, a]) => `<details class="card faq"><summary>${esc(t(lang, q))}</summary><p>${esc(t(lang, a))}</p></details>`).join('')}
+    ${footLinks(lang)}
+  </main>`;
+  return page({ title: `${t(lang, 'supportTitle')} · Nobat`, lang, body });
 }
 
 export function directoryPage(lang, categories, { world = 'all', photos = {}, cat = '' } = {}) {
@@ -83,11 +139,6 @@ export function directoryPage(lang, categories, { world = 'all', photos = {}, ca
     clinic: { title: 'clinicsHeroTitle', lede: 'clinicsHeroLede', ph: 'clinicsPh', trust: ['trust1', 'trust2', 'trust3'], art: photoOr(photos.clinics_hero, HERO_ART) },
     salon: { title: 'beautyHeroTitle', lede: 'beautyHeroLede', ph: 'beautyPh', trust: ['beautyTrust1', 'trust2', 'beautyTrust3'], art: photoOr(photos.beauty_hero, BEAUTY_ART) }
   }[world];
-  const doors = world === 'all' ? `<section class="worlds">
-      ${worldDoor(lang, 'clinic', `/clinics?lang=${lang}`, photoOr(photos.clinics_hero, slice(HERO_ART), ''), 'clinicsWorld', 'clinicsWorldLede')}
-      ${worldDoor(lang, 'beauty', `/beauty?lang=${lang}`, photoOr(photos.beauty_salon || photos.beauty_hero, slice(BEAUTY_ART), ''), 'beautyWorld', 'beautyWorldLede')}
-      ${worldDoor(lang, 'beauty spa', `/beauty?cat=spa&lang=${lang}`, photoOr(photos.beauty_spa, MOOD_ART.spa, ''), 'spaWorld', 'spaWorldLede')}
-    </section>` : '';
   const moods = world === 'salon' ? `<section class="moods">${[
     ['barber_men', 'beauty_barber', 'barbersCard', 'barbersLine'],
     ['spa', 'beauty_spa', 'spaCard', 'spaLine'],
@@ -114,14 +165,14 @@ export function directoryPage(lang, categories, { world = 'all', photos = {}, ca
       </div>
       ${H.art}
     </section>
-    ${doors}${moods}
+    ${moods}
     <div class="section-title"><h2>${esc(t(lang, 'browseTitle'))}</h2>
       ${world === 'all' ? `<div class="kindtabs" role="group"><button type="button" class="chip" data-kind="" aria-pressed="true">${esc(t(lang, 'all'))}</button><button type="button" class="chip" data-kind="clinic" aria-pressed="false">${esc(t(lang, 'doctorsTab'))}</button><button type="button" class="chip" data-kind="salon" aria-pressed="false">${esc(t(lang, 'salonsTab'))}</button></div>` : ''}</div>
     <div class="cat-grid" id="cats"></div>
     <div class="section-title"><h2>${esc(t(lang, 'resultsTitle'))}</h2><div class="viewtabs" role="group"><button type="button" class="chip" data-view="list" aria-pressed="true">${esc(t(lang, 'listView'))}</button><button type="button" class="chip" data-view="map" aria-pressed="false">${esc(t(lang, 'mapView'))}</button></div></div>
     <div id="map" class="map" hidden></div>
     <div id="results" class="stack"></div>
-    <p class="foot"><a href="/login">${esc(t(lang, 'staffSignIn'))}</a></p>
+    ${footLinks(lang)}
   </main>`;
   const shown = world === 'all' ? categories : categories.filter((c) => c.kind === world);
   return page({
@@ -137,6 +188,20 @@ function cover(clinic, lang, rating, photos) {
     <div class="cover-body"><span class="av">${initials(clinic.name)}</span><div>
     <h1>${esc(clinic.name)}</h1><p>${esc([clinic.address, clinic.city].filter(Boolean).join(', '))}</p>
     ${rating && rating.count ? `<span class="rating-chip">★ ${rating.overall.toFixed(1)} · ${esc(rating.count === 1 ? t(lang, 'oneReview') : t(lang, 'nReviews', { n: rating.count }))}</span>` : ''}</div></div></section>`;
+}
+
+// The cancelling, lateness and no-show rules, in plain words, with a call button.
+export function policyBlock(clinic, lang, { call = true } = {}) {
+  const h = clinic.cancel_hours ?? 24, m = clinic.late_minutes ?? 15, n = clinic.noshow_limit ?? 3;
+  const items = [
+    ['🗓️', h > 0 ? `${t(lang, 'policyCancel', { h })} ${t(lang, 'policyCallAfter')}` : t(lang, 'policyCancelAny')],
+    ['⏱️', t(lang, 'policyLate', { m })],
+    n > 0 ? ['⚠️', t(lang, 'policyNoShow', { n })] : null,
+    clinic.policy_note ? ['ℹ️', clinic.policy_note] : null
+  ].filter(Boolean);
+  return `<section class="card policy"><h2>${esc(t(lang, 'policyTitle'))}</h2>
+    <ul>${items.map(([icon, text]) => `<li><span aria-hidden="true">${icon}</span><span>${esc(text)}</span></li>`).join('')}</ul>
+    ${call && clinic.phone ? `<a class="btn ghost small" href="tel:${esc(clinic.phone.replace(/[^\d+]/g, ''))}">📞 ${esc(t(lang, 'callUs'))} · <bdi dir="ltr">${esc(clinic.phone)}</bdi></a>` : ''}</section>`;
 }
 
 // About text and photo gallery a clinic or salon added in Settings.
@@ -160,8 +225,9 @@ export function clinicPage(clinic, doctors, lang, reviews = '', rating = null, p
       </a>`).join('') || '<p class="muted">—</p>'}
     </div>
     ${aboutAndGallery(clinic, lang, photos)}
+    ${policyBlock(clinic, lang)}
     ${reviews}
-    <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
+    <p class="foot">${esc(t(lang, 'poweredBy'))} · <a href="/policy?lang=${lang}">${esc(t(lang, 'policyLink'))}</a> · <a href="/support?lang=${lang}">${esc(t(lang, 'supportLink'))}</a></p>
   </main>`;
   return page({ title: clinic.name, lang, body, manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name });
 }
@@ -177,7 +243,8 @@ export function bookingPage(clinic, doctor, lang, dev, choose) {
       <div id="pick"></div>
     </section>
     ${contactForm(lang, choose)}
-    <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
+    ${policyBlock(clinic, lang)}
+    <p class="foot">${esc(t(lang, 'poweredBy'))} · <a href="/policy?lang=${lang}">${esc(t(lang, 'policyLink'))}</a> · <a href="/support?lang=${lang}">${esc(t(lang, 'supportLink'))}</a></p>
   </main>`;
   return page({ title: `${doctor.name} · ${clinic.name}`, lang, body, manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name, script: 'book.js', data: { lang, dev, doctorId: doctor.id, mode: doctor.mode, t: dictFor(lang) } });
 }
@@ -193,6 +260,7 @@ function contactForm(lang, choose) {
       <div id="codeBox" hidden class="stack">
         <p class="muted" id="codeMsg"></p>
         <label>${esc(t(lang, 'code'))}<input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="4" dir="ltr" class="code"></label>
+        <p class="muted small">${esc(t(lang, 'agreePolicy'))}</p>
         <button class="btn primary big" id="confirm">${esc(t(lang, 'confirm'))}</button>
       </div>
       <p class="err" id="err" role="alert" hidden></p>
@@ -221,8 +289,9 @@ export function salonPage(clinic, staff, services, lang, dev, choose, reviews = 
       <div class="summary" id="summary" hidden></div>
     </section>
     ${contactForm(lang, choose)}
+    ${policyBlock(clinic, lang)}
     ${reviews}
-    <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
+    <p class="foot">${esc(t(lang, 'poweredBy'))} · <a href="/policy?lang=${lang}">${esc(t(lang, 'policyLink'))}</a> · <a href="/support?lang=${lang}">${esc(t(lang, 'supportLink'))}</a></p>
   </main>`;
   return page({ title: clinic.name, lang, body, bodyClass: 'beauty', manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name, script: 'salon-book.js', data: { lang, dev, clinicId: clinic.id, t: dictFor(lang) } });
 }
@@ -233,15 +302,20 @@ export function unavailablePage(clinic, lang) {
   return page({ title: clinic.name, lang, body });
 }
 
-export function ticketPage(booking, lang, points = []) {
+export function ticketPage(booking, lang, points = [], clinic = null) {
   const salon = booking.clinic_kind === 'salon';
   const body = `<header class="top"><div class="wrap row"><span class="brand">${LOGO}<span><b>${esc(booking.clinic_name)}</b><small>${esc(booking.doctor_name)}</small></span></span>${langSwitch(lang, `/t/${booking.token}`)}</div></header>
   <main class="wrap narrow stack">
     <section class="ticket" id="ticket" aria-live="polite"></section>
     <form class="card stack" id="review" hidden></form>
     <p class="muted center">${esc(t(lang, salon ? 'keepLink' : 'keepOpen'))}</p>
-    <button class="btn ghost" id="cancel" hidden>${esc(t(lang, 'cancel'))}</button>
-    <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
+    <section class="card stack cancelbox" id="cancelBox" hidden>
+      <p id="cancelNote"></p>
+      <div class="row" id="cancelBtns"><button class="btn ghost" id="cancel" type="button">${esc(t(lang, 'cancel'))}</button></div>
+      ${clinic && clinic.phone ? `<a class="btn ghost" id="callBtn" hidden href="tel:${esc(clinic.phone.replace(/[^\d+]/g, ''))}">📞 ${esc(t(lang, 'callUs'))} · <bdi dir="ltr">${esc(clinic.phone)}</bdi></a>` : ''}
+    </section>
+    ${clinic ? policyBlock(clinic, lang, { call: false }) : ''}
+    <p class="foot">${esc(t(lang, 'poweredBy'))} · <a href="/policy?lang=${lang}">${esc(t(lang, 'policyLink'))}</a> · <a href="/support?lang=${lang}">${esc(t(lang, 'supportLink'))}</a></p>
   </main>`;
   return page({ title: booking.clinic_name, lang, body, script: 'ticket.js', data: { lang, token: booking.token, salon, points, t: dictFor(lang) } });
 }

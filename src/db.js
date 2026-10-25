@@ -237,6 +237,32 @@ const MIGRATIONS = [
     file TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+  `,
+  // 7: cancellation, lateness and no-show rules; numbers banned from booking anywhere on Nobat; support desk
+  `
+  ALTER TABLE clinics ADD COLUMN cancel_hours INTEGER NOT NULL DEFAULT 24;
+  ALTER TABLE clinics ADD COLUMN late_minutes INTEGER NOT NULL DEFAULT 15;
+  ALTER TABLE clinics ADD COLUMN noshow_limit INTEGER NOT NULL DEFAULT 3;
+  ALTER TABLE clinics ADD COLUMN policy_note TEXT NOT NULL DEFAULT '';
+  ALTER TABLE patients ADD COLUMN blocked INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE patients ADD COLUMN noshow_cleared_at TEXT;
+  ALTER TABLE bookings ADD COLUMN no_show_at TEXT;
+  UPDATE bookings SET no_show_at = date || ' 23:59:59' WHERE status = 'no_show';
+  CREATE TABLE banned_phones (
+    phone TEXT PRIMARY KEY,
+    reason TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE TABLE support_requests (
+    id INTEGER PRIMARY KEY,
+    name TEXT NOT NULL,
+    phone TEXT NOT NULL DEFAULT '',
+    topic TEXT NOT NULL,
+    message TEXT NOT NULL,
+    lang TEXT NOT NULL DEFAULT 'ckb',
+    done INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
   `
 ];
 
