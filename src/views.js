@@ -9,7 +9,7 @@ const json = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
 const iqd = (n) => Number(n || 0).toLocaleString('en-US');
 const initials = (name) => esc(String(name).replace(/^(Dr\.?|د\.)\s*/i, '').split(/\s+/).map((w) => w[0] || '').join('').slice(0, 2));
 
-export function page({ title, lang = 'en', body, data, script, bodyClass = '' }) {
+export function page({ title, lang = 'en', body, data, script, bodyClass = '', manifest = '/manifest.webmanifest', appName = 'Nobat' }) {
   return `<!doctype html>
 <html lang="${esc(lang)}" dir="${RTL.has(lang) ? 'rtl' : 'ltr'}">
 <head>
@@ -17,6 +17,14 @@ export function page({ title, lang = 'en', body, data, script, bodyClass = '' })
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(title)}</title>
 <link rel="stylesheet" href="/static/app.css">
+<link rel="manifest" href="${esc(manifest)}">
+<meta name="theme-color" content="#1f5fbf">
+<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="${esc(appName)}">
+<script src="/static/pwa.js" defer></script>
 </head>
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
 ${body}
@@ -50,7 +58,7 @@ export function clinicPage(clinic, doctors, lang) {
     </div>
     <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
   </main>`;
-  return page({ title: clinic.name, lang, body });
+  return page({ title: clinic.name, lang, body, manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name });
 }
 
 export function bookingPage(clinic, doctor, lang, dev, choose) {
@@ -66,7 +74,7 @@ export function bookingPage(clinic, doctor, lang, dev, choose) {
     ${contactForm(lang, choose)}
     <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
   </main>`;
-  return page({ title: `${doctor.name} · ${clinic.name}`, lang, body, script: 'book.js', data: { lang, dev, doctorId: doctor.id, mode: doctor.mode, t: dictFor(lang) } });
+  return page({ title: `${doctor.name} · ${clinic.name}`, lang, body, manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name, script: 'book.js', data: { lang, dev, doctorId: doctor.id, mode: doctor.mode, t: dictFor(lang) } });
 }
 
 function contactForm(lang, choose) {
@@ -108,7 +116,7 @@ export function salonPage(clinic, staff, services, lang, dev, choose) {
     ${contactForm(lang, choose)}
     <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
   </main>`;
-  return page({ title: clinic.name, lang, body, script: 'salon-book.js', data: { lang, dev, clinicId: clinic.id, t: dictFor(lang) } });
+  return page({ title: clinic.name, lang, body, manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name, script: 'salon-book.js', data: { lang, dev, clinicId: clinic.id, t: dictFor(lang) } });
 }
 
 export function ticketPage(booking, lang) {

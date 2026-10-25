@@ -59,6 +59,26 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     send(db, { clinicId: b.clinic_id, bookingId: b.id, to, kind, body, channel: b.patient_channel });
   }
 
+  // ---------- Install as an app (home screen icon) ----------
+  const ICONS = [
+    { src: '/static/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    { src: '/static/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    { src: '/static/icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+  ];
+  const manifest = (res, m) => res.type('application/manifest+json').send(JSON.stringify({
+    display: 'standalone', background_color: '#edf1f6', theme_color: '#1f5fbf', icons: ICONS, ...m
+  }));
+  // Staff app: opens on the Today screen.
+  app.get('/manifest.webmanifest', (_req, res) => manifest(res, { id: '/app', name: 'Nobat', short_name: 'Nobat', start_url: '/app', scope: '/' }));
+  // Patient app for one clinic or salon: opens on its booking page.
+  app.get('/c/:slug/manifest.webmanifest', (req, res) => {
+    const clinic = clinicBySlug(req.params.slug);
+    if (!clinic) return res.status(404).json({ error: 'error' });
+    manifest(res, { id: `/c/${clinic.slug}`, name: clinic.name, short_name: clinic.name.slice(0, 12), start_url: `/c/${clinic.slug}`, scope: `/c/${clinic.slug}` });
+  });
+  // The service worker must be served from the site root to cover every page.
+  app.get('/sw.js', (_req, res) => res.set('Cache-Control', 'no-cache').sendFile(join(ROOT, 'public', 'sw.js')));
+
   app.get('/healthz', (_req, res) => { db.prepare('SELECT 1').get(); res.json({ ok: true }); });
 
   // ---------- Patient / customer pages ----------

@@ -217,3 +217,17 @@ test('the booking saves the patient\'s message choice', async () => {
   assert.equal(db.prepare("SELECT channel FROM patients WHERE phone = '+9647507778888'").get().channel, 'sms');
   assert.doesNotMatch((await call('/c/clinic/d/1')).data, /name="channel"/); // no choice shown until both are set up
 });
+
+test('the app can be installed on a phone home screen', async () => {
+  const staff = await call('/manifest.webmanifest');
+  assert.equal(staff.data.start_url, '/app');
+  assert.equal(staff.data.display, 'standalone');
+  assert.ok(staff.data.icons.some((i) => i.sizes === '512x512'));
+  const clinic = await call('/c/clinic/manifest.webmanifest');
+  assert.equal(clinic.data.start_url, '/c/clinic');
+  assert.equal(clinic.data.name, 'Clinic');
+  assert.match((await call('/c/clinic')).data, /c\/clinic\/manifest\.webmanifest/);
+  const sw = await fetch(base + '/sw.js');
+  assert.equal(sw.status, 200);
+  assert.equal((await fetch(base + '/static/icons/icon-192.png')).status, 200);
+});
