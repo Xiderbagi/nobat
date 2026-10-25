@@ -3,7 +3,7 @@
   const T = D.t;
   const $ = (id) => document.getElementById(id);
   const state = { q: '', cat: D.cat || '', kind: D.kind || '', lat: null, lng: null, view: 'list', results: [] };
-  const accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#0a6b4f';
+  const accent = getComputedStyle(document.body).getPropertyValue('--accent').trim() || '#1b2a4a';
   const smooth = () => (matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
   let map = null;
   let layer = null;

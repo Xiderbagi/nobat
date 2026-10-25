@@ -95,7 +95,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     { src: '/static/icons/maskable-512.png?v=2', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
   ];
   const manifest = (res, m) => res.type('application/manifest+json').send(JSON.stringify({
-    display: 'standalone', background_color: '#f3f7f5', theme_color: '#064d39', icons: ICONS, ...m
+    display: 'standalone', background_color: '#f7f5f1', theme_color: '#0f1a33', icons: ICONS, ...m
   }));
   // Staff app: opens on the Today screen.
   app.get('/manifest.webmanifest', (_req, res) => manifest(res, { id: '/app', name: 'Nobat', short_name: 'Nobat', start_url: '/app', scope: '/' }));
