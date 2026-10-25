@@ -88,7 +88,7 @@ function simpleHeader(lang, path) {
     ${langSwitch(lang, path)}</div></header>`;
 }
 
-// The opening page: just the three big choices, each a tall picture with its name on it.
+// The opening page: just the three big choices (clinics, spa, salons), each a tall picture with its name on it.
 export function homePage(lang, photos = {}) {
   const door = (cls, href, photo, art, title, line, icon) => `<a class="door ${cls}" href="${href}">
       ${photo ? `<img src="${esc(photo)}" alt="" class="door-pic">` : `<span class="door-pic">${art}</span>`}
@@ -97,8 +97,8 @@ export function homePage(lang, photos = {}) {
   <main class="wrap stack home">
     <section class="doors">
       ${door('clinic', `/clinics?lang=${lang}`, photos.clinics_hero, DOOR_ART.clinic, 'clinicsWorld', 'doorClinics', CATEGORY_ICONS.gp.svg)}
-      ${door('salon', `/beauty?lang=${lang}`, photos.beauty_salon, DOOR_ART.salon, 'beautyWorld', 'doorSalons', CATEGORY_ICONS.barber_men.svg)}
       ${door('spa', `/beauty?cat=spa&amp;lang=${lang}`, photos.beauty_spa, DOOR_ART.spa, 'spaWorld', 'doorSpa', CATEGORY_ICONS.spa.svg)}
+      ${door('salon', `/beauty?lang=${lang}`, photos.beauty_salon, DOOR_ART.salon, 'beautyWorld', 'doorSalons', CATEGORY_ICONS.barber_men.svg)}
     </section>
     ${footLinks(lang)}
   </main>`;

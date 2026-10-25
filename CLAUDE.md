@@ -36,7 +36,7 @@ Patients book online and follow their turn; staff run the day from a reception s
 
 ## Pages
 
-- `/`: only three tall pictures (Clinics and doctors, Salons and barbers, Spa and wellness) plus Cancellation policy and Support desk links.
+- `/`: only three tall pictures, in this order: Clinics and doctors, Spa and wellness, Salons and barbers plus Cancellation policy and Support desk links.
 - `/clinics` and `/beauty`: search pages. `/c/:slug`: a clinic's page. `/t/:token`: a customer's ticket.
 - `/app`: staff screens. `/admin`: the owner (clinics, payments, website photos, no-shows and bans, support inbox).
 
