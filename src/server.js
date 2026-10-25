@@ -99,6 +99,8 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
   }));
   // Staff app: opens on the Today screen.
   app.get('/manifest.webmanifest', (_req, res) => manifest(res, { id: '/app', name: 'Nobat', short_name: 'Nobat', start_url: '/app', scope: '/' }));
+  // Public app for patients and customers: opens on the home page with the three choices.
+  app.get('/home.webmanifest', (_req, res) => manifest(res, { id: '/', name: 'Nobat', short_name: 'Nobat', start_url: '/', scope: '/' }));
   // Patient app for one clinic or salon: opens on its booking page.
   app.get('/c/:slug/manifest.webmanifest', (req, res) => {
     const clinic = clinicBySlug(req.params.slug);

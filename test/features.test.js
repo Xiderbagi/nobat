@@ -227,6 +227,11 @@ test('the app can be installed on a phone home screen', async () => {
   assert.equal(clinic.data.start_url, '/c/clinic');
   assert.equal(clinic.data.name, 'Clinic');
   assert.match((await call('/c/clinic')).data, /c\/clinic\/manifest\.webmanifest/);
+  // Added from the home page (or any public page), the icon opens the home page, not a staff screen.
+  const home = await call('/home.webmanifest');
+  assert.equal(home.data.start_url, '/');
+  for (const path of ['/', '/clinics', '/beauty', '/policy', '/support']) assert.match((await call(path)).data, /href="\/home\.webmanifest"/, path);
+  assert.match((await call('/login')).data, /href="\/manifest\.webmanifest"/);
   const sw = await fetch(base + '/sw.js');
   assert.equal(sw.status, 200);
   assert.equal((await fetch(base + '/static/icons/icon-192.png')).status, 200);

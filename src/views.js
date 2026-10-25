@@ -18,7 +18,7 @@ const json = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
 const iqd = (n) => Number(n || 0).toLocaleString('en-US');
 const initials = (name) => esc(String(name).replace(/^(Dr\.?|د\.)\s*/i, '').split(/\s+/).map((w) => w[0] || '').join('').slice(0, 2));
 
-export function page({ title, lang = 'en', body, data, script, bodyClass = '', manifest = '/manifest.webmanifest', appName = 'Nobat', head = '' }) {
+export function page({ title, lang = 'en', body, data, script, bodyClass = '', manifest = '/home.webmanifest', appName = 'Nobat', head = '' }) {
   return `<!doctype html>
 <html lang="${esc(lang)}" dir="${RTL.has(lang) ? 'rtl' : 'ltr'}">
 <head>
@@ -339,7 +339,7 @@ export function loginPage(lang) {
       <p class="err" id="err" role="alert" hidden></p>
     </form>
   </main>`;
-  return page({ title: 'Nobat', lang, body, script: 'login.js', data: { t: { wrongLogin: L.wrongLogin, errGeneric: L.errGeneric, clinicOff: L.clinicOff } } });
+  return page({ title: 'Nobat', lang, body, manifest: '/manifest.webmanifest', script: 'login.js', data: { t: { wrongLogin: L.wrongLogin, errGeneric: L.errGeneric, clinicOff: L.clinicOff } } });
 }
 
 function staffHeader(user, L, current) {
@@ -355,7 +355,7 @@ function staffHeader(user, L, current) {
 function staffPage(user, clinic, current, title, main, script, data = {}) {
   const L = staffDict(user.lang, clinic.kind);
   return page({
-    title: `${title} · Nobat`, lang: user.lang,
+    title: `${title} · Nobat`, lang: user.lang, manifest: '/manifest.webmanifest',
     body: `${staffHeader(user, L, current)}\n${main(L)}\n<div class="toast" id="toast" role="status"></div>`,
     script: ['staff.js', ...[].concat(script || [])],
     data: { t: L, kind: clinic.kind, role: user.role, clinicSlug: clinic.slug, ...data }
