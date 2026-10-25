@@ -5,6 +5,7 @@ export const RTL = new Set(['ckb', 'ar']);
 
 const T = {
   en: {
+    msgBy: 'Send my messages by',
     keepLink: 'Save this link to see or cancel your booking.',
     chooseServices: 'Choose services', chooseStaff: 'Who should do it?', anyone: 'Anyone free', total: 'Total', minutes: 'min', chooseTime: 'Choose a time',
     bookedTitle: 'You are booked', with: 'With', services: 'Services', noTimes: 'No free times on this day. Try another day or person.', needService: 'Choose at least one service.',
@@ -30,6 +31,7 @@ const T = {
     msgCode: 'Your Nobat code is {code}. It expires in 10 minutes.'
   },
   ckb: {
+    msgBy: 'نامەکانم بنێرە بە',
     keepLink: 'ئەم بەستەرە هەڵبگرە بۆ بینین یان هەڵوەشاندنەوەی نۆرەکەت.',
     chooseServices: 'خزمەتگوزارییەکان هەڵبژێرە', chooseStaff: 'کێ بۆت بکات؟', anyone: 'هەر کەسێکی بەتاڵ', total: 'کۆی گشتی', minutes: 'خولەک', chooseTime: 'کاتێک هەڵبژێرە',
     bookedTitle: 'نۆرەکەت گیرا', with: 'لای', services: 'خزمەتگوزارییەکان', noTimes: 'لەم ڕۆژەدا کاتی بەتاڵ نییە. ڕۆژ یان کەسێکی تر تاقی بکەرەوە.', needService: 'لانیکەم یەک خزمەتگوزاری هەڵبژێرە.',
@@ -55,6 +57,7 @@ const T = {
     msgCode: 'کۆدی Nobat ـەکەت {code}ـە. دوای 10 خولەک بەسەردەچێت.'
   },
   ar: {
+    msgBy: 'أرسل رسائلي عبر',
     keepLink: 'احفظ هذا الرابط لرؤية حجزك أو إلغائه.',
     chooseServices: 'اختر الخدمات', chooseStaff: 'من يقوم بها؟', anyone: 'أي شخص متاح', total: 'المجموع', minutes: 'دقيقة', chooseTime: 'اختر وقتاً',
     bookedTitle: 'تم حجزك', with: 'مع', services: 'الخدمات', noTimes: 'لا توجد أوقات متاحة في هذا اليوم. جرّب يوماً أو شخصاً آخر.', needService: 'اختر خدمة واحدة على الأقل.',

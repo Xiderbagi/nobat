@@ -160,6 +160,10 @@ const MIGRATIONS = [
     service_id INTEGER NOT NULL REFERENCES services(id),
     PRIMARY KEY (doctor_id, service_id)
   );
+  `,
+  // 3: how each patient wants their messages
+  `
+  ALTER TABLE patients ADD COLUMN channel TEXT NOT NULL DEFAULT 'whatsapp' CHECK (channel IN ('whatsapp', 'sms'));
   `
 ];
 

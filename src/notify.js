@@ -6,11 +6,15 @@
 
 const env = process.env;
 
-function channelFor(kind) {
-  if (kind === 'code' && env.SMS_URL) return 'sms';
-  if (env.WHATSAPP_TOKEN && env.WHATSAPP_PHONE_ID && env.WHATSAPP_TEMPLATE) return 'whatsapp';
-  if (env.SMS_URL) return 'sms';
-  return 'console';
+const hasWhatsApp = () => Boolean(env.WHATSAPP_TOKEN && env.WHATSAPP_PHONE_ID && env.WHATSAPP_TEMPLATE);
+const hasSms = () => Boolean(env.SMS_URL);
+
+// Channels to try, in order. Login codes always prefer SMS; other messages follow the patient's choice
+// and fall back to the other channel when the chosen one isn't set up or fails.
+function channelsFor(kind, preferred) {
+  const order = kind === 'code' || preferred === 'sms' ? ['sms', 'whatsapp'] : ['whatsapp', 'sms'];
+  const ready = order.filter((c) => (c === 'sms' ? hasSms() : hasWhatsApp()));
+  return ready.length ? ready : ['console'];
 }
 
 // Business-started WhatsApp messages must use a template approved by Meta.
@@ -45,25 +49,33 @@ async function sendSms(to, body) {
   if (!res.ok) throw new Error(`SMS ${res.status}: ${(await res.text()).slice(0, 300)}`);
 }
 
-export async function send(db, { clinicId = null, bookingId = null, to, kind, body }) {
-  const channel = channelFor(kind);
-  let status = 'sent';
+export async function send(db, { clinicId = null, bookingId = null, to, kind, body, channel: preferred = 'whatsapp' }) {
+  let channel = 'console';
+  let status = 'logged';
   let error = null;
-  try {
-    if (channel === 'whatsapp') await sendWhatsApp(to, body);
-    else if (channel === 'sms') await sendSms(to, body);
-    else {
-      status = 'logged';
+  for (const c of channelsFor(kind, preferred)) {
+    channel = c;
+    if (c === 'console') {
       if (env.NODE_ENV !== 'test') console.log(`[message → ${to}] ${body}`);
+      break;
     }
-  } catch (err) {
-    status = 'failed';
-    error = String(err.message || err);
-    console.error(`[message failed → ${to}] ${error}`);
+    try {
+      if (c === 'whatsapp') await sendWhatsApp(to, body);
+      else await sendSms(to, body);
+      status = 'sent';
+      error = null;
+      break;
+    } catch (err) {
+      status = 'failed';
+      error = (error ? error + ' | ' : '') + String(err.message || err);
+      console.error(`[message failed via ${c} → ${to}] ${err.message || err}`);
+    }
   }
   db.prepare('INSERT INTO messages (clinic_id, booking_id, to_phone, channel, kind, body, status, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
     .run(clinicId, bookingId, to, channel, kind, kind === 'code' ? body.replace(/\d{4}/, '••••') : body, status, error);
   return { channel, status };
 }
 
-export const isLiveMessaging = () => channelFor('update') !== 'console';
+export const isLiveMessaging = () => hasWhatsApp() || hasSms();
+// Patients can only choose when both channels are set up.
+export const canChooseChannel = () => hasWhatsApp() && hasSms();

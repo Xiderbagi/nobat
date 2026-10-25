@@ -53,7 +53,7 @@ export function clinicPage(clinic, doctors, lang) {
   return page({ title: clinic.name, lang, body });
 }
 
-export function bookingPage(clinic, doctor, lang, dev) {
+export function bookingPage(clinic, doctor, lang, dev, choose) {
   const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}/d/${doctor.id}`)}
   <main class="wrap narrow stack">
     <section class="card stack">
@@ -63,16 +63,19 @@ export function bookingPage(clinic, doctor, lang, dev) {
       <h2>${esc(t(lang, doctor.mode === 'time' ? 'byTime' : 'byQueue'))}</h2>
       <div id="pick"></div>
     </section>
-    ${contactForm(lang)}
+    ${contactForm(lang, choose)}
     <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
   </main>`;
   return page({ title: `${doctor.name} · ${clinic.name}`, lang, body, script: 'book.js', data: { lang, dev, doctorId: doctor.id, mode: doctor.mode, t: dictFor(lang) } });
 }
 
-function contactForm(lang) {
+function contactForm(lang, choose) {
   return `<form class="card stack" id="form" novalidate hidden>
       <label>${esc(t(lang, 'name'))}<input id="name" autocomplete="name" maxlength="60" required></label>
       <label>${esc(t(lang, 'phone'))}<input id="phone" type="tel" inputmode="tel" autocomplete="tel" dir="ltr" placeholder="0750 123 4567" maxlength="20" required></label>
+      ${choose ? `<fieldset class="chan"><legend>${esc(t(lang, 'msgBy'))}</legend>
+        <label class="check"><input type="radio" name="channel" value="whatsapp" checked> WhatsApp</label>
+        <label class="check"><input type="radio" name="channel" value="sms"> SMS</label></fieldset>` : ''}
       <button type="button" class="btn ghost" id="sendCode">${esc(t(lang, 'sendCode'))}</button>
       <div id="codeBox" hidden class="stack">
         <p class="muted" id="codeMsg"></p>
@@ -83,7 +86,7 @@ function contactForm(lang) {
     </form>`;
 }
 
-export function salonPage(clinic, staff, services, lang, dev) {
+export function salonPage(clinic, staff, services, lang, dev, choose) {
   const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}`)}
   <main class="wrap narrow stack">
     <section class="card stack">
@@ -102,7 +105,7 @@ export function salonPage(clinic, staff, services, lang, dev) {
       <div id="pick"></div>
       <div class="summary" id="summary" hidden></div>
     </section>
-    ${contactForm(lang)}
+    ${contactForm(lang, choose)}
     <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
   </main>`;
   return page({ title: clinic.name, lang, body, script: 'salon-book.js', data: { lang, dev, clinicId: clinic.id, t: dictFor(lang) } });

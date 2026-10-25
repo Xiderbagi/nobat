@@ -70,7 +70,7 @@
     $('err').hidden = true;
     const btn = $('confirm'); btn.disabled = true;
     try {
-      const r = await api('/api/p/bookings', { doctorId: D.doctorId, date: state.date, time: state.time, name: $('name').value, phone: $('phone').value, code: $('code').value, lang: D.lang });
+      const r = await api('/api/p/bookings', { doctorId: D.doctorId, date: state.date, time: state.time, name: $('name').value, phone: $('phone').value, code: $('code').value, lang: D.lang, channel: (document.querySelector('input[name="channel"]:checked') || {}).value });
       location.href = `/t/${r.token}`;
     } catch (err) {
       showError(err.message);

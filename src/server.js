@@ -5,7 +5,7 @@ import { dirname, join } from 'node:path';
 import { openDb, tx } from './db.js';
 import { pickLang, t } from './i18n.js';
 import { pickStaffLang } from './staff-i18n.js';
-import { send, isLiveMessaging } from './notify.js';
+import { send, isLiveMessaging, canChooseChannel } from './notify.js';
 import { clearCookie, loadUser, login, logout, requireOwner, requireUser, sessionCookie } from './auth.js';
 import {
   BookingError, activeServices, addWalkIn, bookableDays, callNext, createBooking, createSalonBooking, dayList, dueFollowUps, dueRebooks,
@@ -56,7 +56,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const salon = b.clinic_kind === 'salon';
     const key = { confirmed: salon ? 'msgConfirmedSalon' : 'msgConfirmed', reminder: salon ? 'msgReminderSalon' : 'msgReminder', near: 'msgNear', turn: 'msgTurn' }[kind];
     const body = t(b.lang, key, { clinic: b.clinic_name, doctor: b.doctor_name, when: when(b), no: b.queue_no, link: link(b), services: b.service_names || '', ...extra });
-    send(db, { clinicId: b.clinic_id, bookingId: b.id, to, kind, body });
+    send(db, { clinicId: b.clinic_id, bookingId: b.id, to, kind, body, channel: b.patient_channel });
   }
 
   app.get('/healthz', (_req, res) => { db.prepare('SELECT 1').get(); res.json({ ok: true }); });
@@ -69,7 +69,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     if (!clinic) return res.status(404).send('Not found');
     const lang = langOf(req); rememberLang(req, res, lang);
     const staff = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? AND active = 1 ORDER BY name').all(clinic.id);
-    if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev));
+    if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev, canChooseChannel()));
     res.send(views.clinicPage(clinic, staff, lang));
   });
 
@@ -79,7 +79,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     if (!doctor || doctor.clinic_id !== clinic.id) return res.status(404).send('Not found');
     if (clinic.kind === 'salon') return res.redirect(`/c/${clinic.slug}`);
     const lang = langOf(req); rememberLang(req, res, lang);
-    res.send(views.bookingPage(clinic, doctor, lang, dev));
+    res.send(views.bookingPage(clinic, doctor, lang, dev, canChooseChannel()));
   });
 
   app.get('/t/:token', (req, res) => {
@@ -165,7 +165,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const err = contactError(req.body, phone);
     if (err) return res.status(400).json({ error: err });
     try {
-      const b = createBooking(db, { doctor, date, time, name, phone, lang });
+      const b = createBooking(db, { doctor, date, time, name, phone, lang, channel: req.body.channel });
       notifyBooking(b, 'confirmed');
       res.json({ token: b.token });
     } catch (e) {
@@ -184,7 +184,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const err = contactError(req.body, phone);
     if (err) return res.status(400).json({ error: err });
     try {
-      const b = createSalonBooking(db, { clinicId: clinic.id, staffId: Number(req.body.staffId) || null, serviceIds, date, time, name: String(req.body.name).trim().slice(0, 60), phone, lang: pickLang(req.body.lang) });
+      const b = createSalonBooking(db, { clinicId: clinic.id, staffId: Number(req.body.staffId) || null, serviceIds, date, time, name: String(req.body.name).trim().slice(0, 60), phone, lang: pickLang(req.body.lang), channel: req.body.channel });
       notifyBooking(b, 'confirmed');
       res.json({ token: b.token });
     } catch (e) {
@@ -315,7 +315,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
       if (!serviceIds.length) return res.status(400).json({ error: 'needService' });
       if (!isClock(req.body.time)) return res.status(400).json({ error: 'errGeneric' });
       try {
-        const b = createSalonBooking(db, { clinicId: clinic.id, staffId: Number(req.body.staffId) || null, serviceIds, date: req.body.date, time: req.body.time, name, phone, source: 'walkin', checkDays: false });
+        const b = createSalonBooking(db, { clinicId: clinic.id, staffId: Number(req.body.staffId) || null, serviceIds, date: req.body.date, time: req.body.time, name, phone, source: 'walkin', checkDays: false, channel: req.body.channel });
         notifyBooking(b, 'confirmed');
         return res.json({ time: b.time, staff: b.doctor_name });
       } catch (e) {
@@ -325,7 +325,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     }
     const doctor = ownDoctor(req, req.body.doctorId);
     if (!doctor) return res.status(400).json({ error: 'errGeneric' });
-    res.json({ queueNo: addWalkIn(db, doctor, req.body.date, name, phone).queue_no });
+    res.json({ queueNo: addWalkIn(db, doctor, req.body.date, name, phone, req.body.channel).queue_no });
   });
 
   // ---------- Patient files ----------
@@ -349,7 +349,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const notes = canReadNotes(req) ? db.prepare(`SELECT n.id, n.note, n.booking_id, n.created_at, u.name AS author FROM visit_notes n
       LEFT JOIN users u ON u.id = n.author_id WHERE n.patient_id = ? ORDER BY n.id DESC`).all(p.id) : null;
     res.json({
-      patient: { id: p.id, name: p.name, phone: displayPhone(p.phone), birth_year: p.birth_year, allergies: canReadNotes(req) ? p.allergies : null, notes: canReadNotes(req) ? p.notes : null, follow_up_date: p.follow_up_date },
+      patient: { id: p.id, name: p.name, phone: displayPhone(p.phone), channel: p.channel, birth_year: p.birth_year, allergies: canReadNotes(req) ? p.allergies : null, notes: canReadNotes(req) ? p.notes : null, follow_up_date: p.follow_up_date },
       visits, notes, canReadNotes: canReadNotes(req)
     });
   });
@@ -361,6 +361,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const year = Number(req.body.birth_year);
     const birth = Number.isInteger(year) && year > 1900 && year <= new Date().getFullYear() ? year : null;
     const follow = isIsoDate(req.body.follow_up_date) ? req.body.follow_up_date : null;
+    if (['whatsapp', 'sms'].includes(req.body.channel)) db.prepare('UPDATE patients SET channel = ? WHERE id = ?').run(req.body.channel, p.id);
     if (canReadNotes(req)) {
       db.prepare('UPDATE patients SET name = ?, birth_year = ?, allergies = ?, notes = ?, follow_up_date = ?, follow_up_sent_at = CASE WHEN follow_up_date IS ? THEN follow_up_sent_at ELSE NULL END WHERE id = ?')
         .run(name, birth, String(req.body.allergies || '').slice(0, 300), String(req.body.notes || '').slice(0, 2000), follow, follow, p.id);
@@ -487,17 +488,17 @@ export function runScheduled(db, baseUrl, now = new Date()) {
       markReminded(db, b.id);
       const salon = b.clinic_kind === 'salon';
       const body = t(b.lang, salon ? 'msgReminderSalon' : 'msgReminder', { clinic: b.clinic_name, doctor: b.doctor_name, when: salon ? b.time : `${b.date}${b.time ? ' ' + b.time : ''}`, no: b.queue_no, services: b.service_names || '', link: `${baseUrl}/t/${b.token}` });
-      send(db, { clinicId: b.clinic_id, bookingId: b.id, to: b.patient_phone, kind: 'reminder', body });
+      send(db, { clinicId: b.clinic_id, bookingId: b.id, to: b.patient_phone, kind: 'reminder', body, channel: b.patient_channel });
     }
     for (const p of dueFollowUps(db, now)) {
       markFollowUpSent(db, p.id);
-      send(db, { clinicId: p.clinic_id, to: p.phone, kind: 'follow-up', body: t(p.lang || 'ckb', 'msgFollowUp', { clinic: p.clinic_name, link: `${baseUrl}/c/${p.clinic_slug}` }) });
+      send(db, { clinicId: p.clinic_id, to: p.phone, kind: 'follow-up', channel: p.channel, body: t(p.lang || 'ckb', 'msgFollowUp', { clinic: p.clinic_name, link: `${baseUrl}/c/${p.clinic_slug}` }) });
     }
   }
   if (clock >= '10:00') {
     for (const b of dueRebooks(db, now)) {
       markRebookSent(db, b.id);
-      send(db, { clinicId: b.clinic_id, bookingId: b.id, to: b.patient_phone, kind: 'rebook', body: t(b.lang, 'msgRebook', { clinic: b.clinic_name, link: `${baseUrl}/c/${b.clinic_slug}` }) });
+      send(db, { clinicId: b.clinic_id, bookingId: b.id, to: b.patient_phone, kind: 'rebook', channel: b.patient_channel, body: t(b.lang, 'msgRebook', { clinic: b.clinic_name, link: `${baseUrl}/c/${b.clinic_slug}` }) });
     }
   }
 }

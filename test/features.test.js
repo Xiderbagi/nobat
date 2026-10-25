@@ -188,3 +188,32 @@ test('salon: customer books online, desk adds a booking, owner manages services'
   const otherOwner = await signIn('owner@c.iq');
   assert.equal((await call('/api/s/services', { method: 'POST', cookie: otherOwner, body: { id: svc.data.id, name: 'Hacked' } })).status, 404);
 });
+
+test('messages follow the patient\'s choice and fall back to the other channel', async () => {
+  const { send } = await import('../src/notify.js');
+  const db2 = openDb(':memory:');
+  const realFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => { calls.push(String(url)); return String(url).includes('facebook') ? new Response('down', { status: 500 }) : new Response('{}'); };
+  Object.assign(process.env, { SMS_URL: 'https://sms.example/send', WHATSAPP_TOKEN: 't', WHATSAPP_PHONE_ID: '1', WHATSAPP_TEMPLATE: 'x' });
+  try {
+    assert.equal((await send(db2, { to: '+9647500000001', kind: 'turn', body: 'hi', channel: 'sms' })).channel, 'sms');
+    const r = await send(db2, { to: '+9647500000001', kind: 'turn', body: 'hi', channel: 'whatsapp' });
+    assert.deepEqual([r.channel, r.status], ['sms', 'sent']); // WhatsApp failed, SMS worked
+    assert.ok(calls.some((u) => u.includes('facebook')));
+    delete process.env.WHATSAPP_TOKEN; // SMS only: WhatsApp choice is ignored
+    assert.equal((await send(db2, { to: '+9647500000001', kind: 'turn', body: 'hi', channel: 'whatsapp' })).channel, 'sms');
+  } finally {
+    globalThis.fetch = realFetch;
+    for (const k of ['SMS_URL', 'WHATSAPP_TOKEN', 'WHATSAPP_PHONE_ID', 'WHATSAPP_TEMPLATE']) delete process.env[k];
+  }
+});
+
+test('the booking saves the patient\'s message choice', async () => {
+  const otp = await call('/api/p/otp', { method: 'POST', body: { phone: '0750 777 8888' } });
+  const day = await call('/api/p/doctors/1/day');
+  const r = await call('/api/p/bookings', { method: 'POST', body: { doctorId: 1, date: day.data.date, name: 'Kani', phone: '07507778888', code: otp.data.devCode, channel: 'sms' } });
+  assert.equal(r.status, 200);
+  assert.equal(db.prepare("SELECT channel FROM patients WHERE phone = '+9647507778888'").get().channel, 'sms');
+  assert.doesNotMatch((await call('/c/clinic/d/1')).data, /name="channel"/); // no choice shown until both are set up
+});

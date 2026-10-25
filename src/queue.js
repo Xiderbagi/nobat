@@ -70,21 +70,28 @@ export function orderedWaiting(db, doctorId, date) {
   return db.prepare(`SELECT b.* FROM bookings b WHERE b.doctor_id = ? AND b.date = ? AND b.status IN ('booked', 'arrived') ORDER BY ${ORDER}`).all(doctorId, date);
 }
 
-export function findOrCreatePatient(db, clinicId, name, phone) {
+export const CHANNELS = ['whatsapp', 'sms'];
+
+// channel: how the patient wants messages ('whatsapp' or 'sms'); left as it was when not given.
+export function findOrCreatePatient(db, clinicId, name, phone, channel) {
+  const ch = CHANNELS.includes(channel) ? channel : null;
   const existing = db.prepare('SELECT * FROM patients WHERE clinic_id = ? AND phone = ?').get(clinicId, phone);
   if (existing) {
-    if (existing.name !== name) db.prepare('UPDATE patients SET name = ? WHERE id = ?').run(name, existing.id);
+    db.prepare('UPDATE patients SET name = ?, channel = COALESCE(?, channel) WHERE id = ?').run(name, ch, existing.id);
     return existing.id;
   }
-  return Number(db.prepare('INSERT INTO patients (clinic_id, name, phone) VALUES (?, ?, ?)').run(clinicId, name, phone).lastInsertRowid);
+  return Number(db.prepare('INSERT INTO patients (clinic_id, name, phone, channel) VALUES (?, ?, ?, ?)').run(clinicId, name, phone, ch || 'whatsapp').lastInsertRowid);
 }
 
 // Creates an online booking. Throws BookingError with a code the page can translate.
-export function createBooking(db, { doctor, date, time, name, phone, lang }, now = new Date()) {
+export function createBooking(db, { doctor, date, time, name, phone, lang, channel }, now = new Date()) {
   if (!isBookableDate(db, doctor, date, now)) throw new BookingError('closed');
   return tx(db, () => {
     const dup = db.prepare(`SELECT b.token FROM bookings b JOIN patients p ON p.id = b.patient_id WHERE b.doctor_id = ? AND b.date = ? AND p.phone = ? AND b.status IN ${ACTIVE}`).get(doctor.id, date, phone);
-    if (dup) return getBookingByToken(db, dup.token);
+    if (dup) {
+      findOrCreatePatient(db, doctor.clinic_id, name, phone, channel);
+      return getBookingByToken(db, dup.token);
+    }
     const count = db.prepare(`SELECT COUNT(*) AS n FROM bookings WHERE doctor_id = ? AND date = ? AND status != 'cancelled'`).get(doctor.id, date).n;
     if (count >= doctor.daily_limit) throw new BookingError('full');
     let slot = null;
@@ -93,7 +100,7 @@ export function createBooking(db, { doctor, date, time, name, phone, lang }, now
       if (!s || !s.free) throw new BookingError('slotTaken');
       slot = time;
     }
-    const patientId = findOrCreatePatient(db, doctor.clinic_id, name, phone);
+    const patientId = findOrCreatePatient(db, doctor.clinic_id, name, phone, channel);
     const tok = token();
     db.prepare('INSERT INTO bookings (clinic_id, doctor_id, patient_id, date, time, duration_min, queue_no, source, token, lang) VALUES (?, ?, ?, ?, ?, ?, ?, \'online\', ?, ?)')
       .run(doctor.clinic_id, doctor.id, patientId, date, slot, slot ? doctor.slot_minutes : null, nextQueueNo(db, doctor.id, date), tok, lang);
@@ -101,9 +108,9 @@ export function createBooking(db, { doctor, date, time, name, phone, lang }, now
   });
 }
 
-export function addWalkIn(db, doctor, date, name, phone) {
+export function addWalkIn(db, doctor, date, name, phone, channel) {
   return tx(db, () => {
-    const patientId = phone ? findOrCreatePatient(db, doctor.clinic_id, name, phone) : null;
+    const patientId = phone ? findOrCreatePatient(db, doctor.clinic_id, name, phone, channel) : null;
     const tok = token();
     db.prepare('INSERT INTO bookings (clinic_id, doctor_id, patient_id, walkin_name, date, queue_no, status, source, token) VALUES (?, ?, ?, ?, ?, ?, \'arrived\', \'walkin\', ?)')
       .run(doctor.clinic_id, doctor.id, patientId, patientId ? null : name, date, nextQueueNo(db, doctor.id, date), tok);
@@ -111,7 +118,7 @@ export function addWalkIn(db, doctor, date, name, phone) {
   });
 }
 
-const BOOKING_SELECT = `SELECT b.*, COALESCE(p.name, b.walkin_name, 'Walk-in') AS patient_name, p.phone AS patient_phone,
+const BOOKING_SELECT = `SELECT b.*, COALESCE(p.name, b.walkin_name, 'Walk-in') AS patient_name, p.phone AS patient_phone, p.channel AS patient_channel,
   d.name AS doctor_name, d.mode AS doctor_mode, d.avg_minutes, c.name AS clinic_name, c.slug AS clinic_slug, c.kind AS clinic_kind,
   (SELECT group_concat(s.name, ' + ') FROM booking_services bs JOIN services s ON s.id = bs.service_id WHERE bs.booking_id = b.id) AS service_names
   FROM bookings b JOIN doctors d ON d.id = b.doctor_id JOIN clinics c ON c.id = b.clinic_id LEFT JOIN patients p ON p.id = b.patient_id`;
@@ -232,7 +239,7 @@ export function salonTimes(db, clinicId, staffId, date, minutes, now = new Date(
 }
 
 // Creates a salon booking (online or from the front desk). staffId null = first free person.
-export function createSalonBooking(db, { clinicId, staffId, serviceIds, date, time, name, phone, lang = 'ckb', source = 'online', checkDays = true }, now = new Date()) {
+export function createSalonBooking(db, { clinicId, staffId, serviceIds, date, time, name, phone, lang = 'ckb', source = 'online', checkDays = true, channel }, now = new Date()) {
   const services = activeServices(db, clinicId, serviceIds);
   if (!services.length) throw new BookingError('needService');
   const minutes = services.reduce((a, s) => a + s.minutes, 0);
@@ -242,7 +249,7 @@ export function createSalonBooking(db, { clinicId, staffId, serviceIds, date, ti
     if (checkDays && !candidates.some((d) => bookableDays(db, d.id, now).some((x) => x.date === date && x.open))) throw new BookingError('closed');
     const staff = candidates.find((d) => fits(db, d, date, start, minutes, busy(db, d.id, date)));
     if (!staff) throw new BookingError(candidates.some((d) => hoursFor(db, d.id, date).length) ? 'slotTaken' : 'closed');
-    const patientId = phone ? findOrCreatePatient(db, clinicId, name, phone) : null;
+    const patientId = phone ? findOrCreatePatient(db, clinicId, name, phone, channel) : null;
     const tok = token();
     const id = Number(db.prepare(`INSERT INTO bookings (clinic_id, doctor_id, patient_id, walkin_name, date, time, duration_min, queue_no, status, source, token, lang)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(clinicId, staff.id, patientId, patientId ? null : name, date, time, minutes,

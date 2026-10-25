@@ -194,3 +194,5 @@ tr.link:hover td { background: var(--sunk); }
   .poster { box-shadow: none; width: 100%; margin: 0; padding: 0; }
 }
 .checks { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.chan { border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; display: flex; gap: 18px; flex-wrap: wrap; margin: 0; }
+.chan legend { font-size: 14px; font-weight: 600; padding: 0 4px; }
