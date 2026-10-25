@@ -7,7 +7,7 @@ import { STAFF_LANGS, staffDict, st } from './staff-i18n.js';
 import { categoryName } from './categories.js';
 import { BEAUTY_ART, CATEGORY_ICONS, DOOR_ART, HERO_ART, MOOD_ART, avatarTone } from './icons.js';
 
-const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#ffc53d"/></svg>';
+const LOGO = '<svg viewBox="0 0 512 512" aria-hidden="true" class="logo"><rect width="512" height="512" rx="120" fill="#1b2a4a"/><g transform="translate(-2 9)" fill="none" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"><path d="M130 370V150L262 360" stroke="#fff"/><path d="M262 360c60 20 128 -20 124 -140" stroke="#c69563"/></g><circle cx="324" cy="141" r="32" fill="#fff"/></svg>';
 
 // Data for page scripts goes in a JSON script tag, escaped so it can't close the tag.
 // A fingerprint of the styles and scripts, added to their links, so phones load new versions at once after an update.
@@ -28,9 +28,9 @@ export function page({ title, lang = 'en', body, data, script, bodyClass = '', m
 <link rel="stylesheet" href="/static/vendor/vazirmatn/index.css">
 <link rel="stylesheet" href="/static/app.css?v=${ASSET_V}">
 <link rel="manifest" href="${esc(manifest)}">
-<meta name="theme-color" content="#0b8f7a">
-<link rel="icon" href="/static/icons/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png">
+<meta name="theme-color" content="#0f1a33">
+<link rel="icon" href="/static/icons/icon.svg?v=${ASSET_V}" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icons/apple-touch-icon.png?v=2">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="${esc(appName)}">
