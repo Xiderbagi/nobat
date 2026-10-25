@@ -90,9 +90,9 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
 
   // ---------- Install as an app (home screen icon) ----------
   const ICONS = [
-    { src: '/static/icons/icon-192.png?v=3', sizes: '192x192', type: 'image/png' },
-    { src: '/static/icons/icon-512.png?v=3', sizes: '512x512', type: 'image/png' },
-    { src: '/static/icons/maskable-512.png?v=3', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+    { src: '/static/icons/icon-192.png?v=4', sizes: '192x192', type: 'image/png' },
+    { src: '/static/icons/icon-512.png?v=4', sizes: '512x512', type: 'image/png' },
+    { src: '/static/icons/maskable-512.png?v=4', sizes: '512x512', type: 'image/png', purpose: 'maskable' }
   ];
   const manifest = (res, m) => res.type('application/manifest+json').send(JSON.stringify({
     display: 'standalone', background_color: '#f7f5f1', theme_color: '#0f1a33', icons: ICONS, ...m
