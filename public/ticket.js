@@ -37,10 +37,47 @@
     if (['done', 'cancelled'].includes(s.status)) clearInterval(timer);
   }
 
+  // After the visit: rate it on four points, plus an optional comment.
+  const form = document.getElementById('review');
+  const picked = {};
+  let formShown = false;
+  function showReview(s) {
+    if (s.reviewed && !formShown) { form.hidden = true; return; }
+    if (!s.canReview || formShown) return;
+    formShown = true;
+    form.hidden = false;
+    const rows = D.points.map((p) => {
+      const btns = [1, 2, 3, 4, 5].map((n) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'star'; b.textContent = '★'; b.setAttribute('aria-label', `${p.name}: ${n}`);
+        b.addEventListener('click', () => { picked[p.key] = n; [...b.parentNode.children].forEach((x, i) => x.classList.toggle('on', i < n)); });
+        return b;
+      });
+      const row = el('div', 'rate-row', el('span', '', p.name));
+      const group = el('span', 'stars-input', ...btns);
+      group.setAttribute('role', 'group'); group.setAttribute('aria-label', p.name);
+      row.append(group);
+      return row;
+    });
+    const comment = document.createElement('textarea');
+    comment.rows = 3; comment.maxLength = 1000; comment.id = 'rcomment';
+    const err = el('p', 'err'); err.hidden = true; err.setAttribute('role', 'alert');
+    const send = el('button', 'btn primary big', T.sendReview);
+    form.replaceChildren(el('h2', '', T.rateVisit), el('p', 'muted small', T.rateHint), ...rows, el('label', '', T.yourComment, comment), err, send);
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (D.points.some((p) => !picked[p.key])) { err.textContent = T.needStars; err.hidden = false; return; }
+      send.disabled = true;
+      const res = await fetch(`/api/p/t/${D.token}/review`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...picked, comment: comment.value, lang: D.lang }) });
+      if (res.ok) form.replaceChildren(el('p', 'thanks', T.thanksReview));
+      else { err.textContent = T.error; err.hidden = false; send.disabled = false; }
+    });
+  }
+
   async function refresh() {
     try {
       const res = await fetch(`/api/p/t/${D.token}`);
-      if (res.ok) render(await res.json());
+      if (res.ok) { const s = await res.json(); render(s); showReview(s); }
     } catch { /* offline: try again on the next tick */ }
   }
 

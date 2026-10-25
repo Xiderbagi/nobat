@@ -109,7 +109,7 @@ export function adminRouter(db, { baseUrl, secure }) {
         <td><a href="/admin/clinics/${c.id}"><b>${esc(c.name)}</b></a><div class="muted small">${c.kind === 'salon' ? 'Salon' : 'Clinic'} · ${esc(c.city)} · ${esc(c.owner || '')}</div></td>
         <td class="num" data-label="Bookings this month">${c.month_bookings}</td>
         <td class="nowrap" data-label="Last booking">${c.last_booking ? esc(c.last_booking.slice(0, 10)) : '<span class="muted">never</span>'}${c.status !== 'off' && idle(c) ? ' <span class="pill warn">Not using it</span>' : ''}</td>
-        <td><span class="pill ${st.cls}">${esc(st.label)}</span></td></tr>`;
+        <td><span class="pill ${st.cls}">${esc(st.label)}</span>${c.featured_until && c.featured_until >= today ? ` <span class="pill accent">★ Featured to ${esc(c.featured_until)}</span>` : ''}</td></tr>`;
     }).join('');
     const main = `
       <div class="row"><h1>Your clinics</h1><span class="grow"></span><a class="btn primary" href="/admin/clinics/new">+ Add clinic</a></div>
@@ -196,6 +196,9 @@ export function adminRouter(db, { baseUrl, secure }) {
     const users = db.prepare('SELECT id, name, email, role FROM users WHERE clinic_id = ? ORDER BY role, name').all(c.id);
     const payments = db.prepare('SELECT * FROM payments WHERE clinic_id = ? ORDER BY id DESC').all(c.id);
     const nextUntil = addDays(c.paid_until && c.paid_until > today ? c.paid_until : today, 30);
+    const featured = c.featured_until && c.featured_until >= today;
+    const reviews = db.prepare('SELECT * FROM reviews WHERE clinic_id = ? ORDER BY id DESC LIMIT 50').all(c.id);
+    const rating = db.prepare('SELECT COUNT(*) AS n, AVG(overall) AS avg FROM reviews WHERE clinic_id = ? AND hidden = 0').get(c.id);
     const roleName = { owner: 'Owner', reception: 'Reception', doctor: c.kind === 'salon' ? 'Staff member' : 'Doctor' };
     const main = `
       <a class="back" href="/admin">← All clinics</a>
@@ -224,6 +227,12 @@ export function adminRouter(db, { baseUrl, secure }) {
               ${payments.map((p) => `<tr><td class="nowrap">${esc(p.created_at.slice(0, 10))}</td><td class="num nowrap">${p.amount.toLocaleString('en-US')} ${p.currency}</td><td>${esc(p.method)}</td><td class="nowrap">${esc(p.paid_until)}</td><td>${esc(p.note)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">No payments yet.</td></tr>'}
             </tbody></table></div>
           </section>
+          <section class="card stack"><h2>Reviews ${rating.n ? `<span class="muted small">${rating.avg.toFixed(1)} ★ from ${rating.n}</span>` : ''}</h2>
+            ${reviews.length ? `<div class="tablewrap"><table><thead><tr><th>Date</th><th>By</th><th>Stars</th><th>Comment</th><th></th></tr></thead><tbody>
+              ${reviews.map((rv) => `<tr class="${rv.hidden ? 'faded' : ''}"><td class="nowrap">${esc(rv.created_at.slice(0, 10))}</td><td>${esc(rv.author)}</td><td class="nowrap">${rv.overall.toFixed(1)} ★</td><td dir="auto">${esc(rv.comment)}</td>
+                <td class="actions"><form method="post" action="/admin/reviews/${rv.id}/${rv.hidden ? 'show' : 'hide'}"><button class="btn ghost small">${rv.hidden ? 'Show' : 'Hide'}</button></form></td></tr>`).join('')}
+            </tbody></table></div><p class="muted small">Hide only reviews that are abusive or not about a real visit. Hidden reviews don't count in the rating.</p>` : '<p class="muted">No reviews yet.</p>'}
+          </section>
           <section class="card stack"><h2>Staff accounts</h2>
             <div class="tablewrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th></th></tr></thead><tbody>
               ${users.map((u) => `<tr><td>${esc(u.name)}</td><td dir="ltr">${esc(u.email)}</td><td>${roleName[u.role] || u.role}</td>
@@ -241,6 +250,13 @@ export function adminRouter(db, { baseUrl, secure }) {
                  <button class="btn danger">Switch off</button></form>`}
             ${c.status === 'trial' ? `<form method="post" action="/admin/clinics/${c.id}/trial" class="row"><label class="inline">Trial ends <input type="date" name="trial_ends" value="${esc(c.trial_ends || today)}"></label><button class="btn ghost small">Change</button></form>` : ''}
           </section>
+          <section class="card stack"><h2>Featured in search ${featured ? '<span class="pill accent">★ On</span>' : ''}</h2>
+            <p class="muted small">Featured clinics show first in search, marked "Featured". Charge for it and record the payment on the left.</p>
+            <form method="post" action="/admin/clinics/${c.id}/featured" class="stack">
+              <label>Featured until<input type="date" name="featured_until" value="${esc(featured ? c.featured_until : addDays(today, 30))}"></label>
+              <div class="row"><button class="btn primary small">${featured ? 'Change date' : 'Make featured'}</button>${featured ? '<button class="btn ghost small" name="stop" value="1">Stop featuring</button>' : ''}</div>
+            </form>
+          </section>
           <section class="card stack"><h2>Quick links</h2>
             <a class="btn ghost" href="/admin/clinics/${c.id}/poster">QR poster</a>
             <a class="btn ghost" href="/c/${esc(c.slug)}" target="_blank" rel="noopener">Their booking page ↗</a>
@@ -253,7 +269,22 @@ export function adminRouter(db, { baseUrl, secure }) {
     res.send(shell(req.admin, c.name, main, notice));
   }
 
-  const NOTICES = { paid: 'Payment saved.', on: 'Clinic switched on.', off: 'Clinic switched off.', note: 'Note saved.', trial: 'Trial date changed.' };
+  const NOTICES = { paid: 'Payment saved.', on: 'Clinic switched on.', off: 'Clinic switched off.', note: 'Note saved.', trial: 'Trial date changed.', featured: 'Featured placement updated.', review: 'Review updated.' };
+
+  r.post('/clinics/:id/featured', (req, res) => {
+    const c = getClinic(req.params.id);
+    if (!c) return res.redirect(303, '/admin');
+    const until = req.body.stop ? null : isIsoDate(req.body.featured_until) ? req.body.featured_until : c.featured_until;
+    db.prepare('UPDATE clinics SET featured_until = ? WHERE id = ?').run(until, c.id);
+    res.redirect(303, `/admin/clinics/${c.id}?ok=featured`);
+  });
+
+  r.post('/reviews/:id/:action', (req, res) => {
+    const rv = db.prepare('SELECT * FROM reviews WHERE id = ?').get(Number(req.params.id));
+    if (!rv || !['hide', 'show'].includes(req.params.action)) return res.redirect(303, '/admin');
+    db.prepare('UPDATE reviews SET hidden = ? WHERE id = ?').run(req.params.action === 'hide' ? 1 : 0, rv.id);
+    res.redirect(303, `/admin/clinics/${rv.clinic_id}?ok=review`);
+  });
 
   r.get('/clinics/:id', (req, res) => {
     const c = getClinic(req.params.id);

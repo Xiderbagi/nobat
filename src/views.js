@@ -1,6 +1,7 @@
 import { esc } from './util.js';
 import { LANGS, RTL, t, dictFor } from './i18n.js';
 import { STAFF_LANGS, staffDict, st } from './staff-i18n.js';
+import { categoryName } from './categories.js';
 
 const LOGO = '<svg viewBox="0 0 40 40" aria-hidden="true" class="logo"><rect width="40" height="40" rx="11" fill="currentColor"/><rect x="17" y="9" width="6" height="22" rx="2" fill="#fff"/><rect x="9" y="17" width="22" height="6" rx="2" fill="#fff"/><circle cx="30" cy="30" r="6" fill="#f08a6f"/></svg>';
 
@@ -9,7 +10,7 @@ const json = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
 const iqd = (n) => Number(n || 0).toLocaleString('en-US');
 const initials = (name) => esc(String(name).replace(/^(Dr\.?|د\.)\s*/i, '').split(/\s+/).map((w) => w[0] || '').join('').slice(0, 2));
 
-export function page({ title, lang = 'en', body, data, script, bodyClass = '', manifest = '/manifest.webmanifest', appName = 'Nobat' }) {
+export function page({ title, lang = 'en', body, data, script, bodyClass = '', manifest = '/manifest.webmanifest', appName = 'Nobat', head = '' }) {
   return `<!doctype html>
 <html lang="${esc(lang)}" dir="${RTL.has(lang) ? 'rtl' : 'ltr'}">
 <head>
@@ -25,6 +26,7 @@ export function page({ title, lang = 'en', body, data, script, bodyClass = '', m
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="${esc(appName)}">
 <script src="/static/pwa.js" defer></script>
+${head}
 </head>
 <body${bodyClass ? ` class="${bodyClass}"` : ''}>
 ${body}
@@ -45,17 +47,55 @@ function publicHeader(clinic, lang, path) {
 }
 
 // ---------- Patient / customer pages ----------
-export function clinicPage(clinic, doctors, lang) {
+const stars = (v) => { const n = Math.round(v || 0); return '★'.repeat(n) + '☆'.repeat(5 - n); };
+
+// Ratings for a clinic: overall, the four points, and the latest comments.
+export function reviewsBlock(lang, summary, points, reviews) {
+  if (!summary.count) return `<section class="card stack"><h2>${esc(t(lang, 'reviewsTitle'))}</h2><p class="muted">${esc(t(lang, 'noReviews'))}</p></section>`;
+  return `<section class="card stack reviews"><h2>${esc(t(lang, 'reviewsTitle'))}</h2>
+    <div class="rating-head"><b class="big-rating">${summary.overall.toFixed(1)}</b><span class="stars" aria-hidden="true">${stars(summary.overall)}</span><span class="muted">${esc(summary.count === 1 ? t(lang, 'oneReview') : t(lang, 'nReviews', { n: summary.count }))}</span></div>
+    <div class="points">${points.map((p) => `<div><span>${esc(p.name)}</span><meter min="0" max="5" value="${summary[p.key]}">${summary[p.key].toFixed(1)}</meter><b>${summary[p.key].toFixed(1)}</b></div>`).join('')}</div>
+    <div class="stack">${reviews.map((r) => `<article class="review"><div class="row"><b>${esc(r.author || '—')}</b><span class="stars small" aria-label="${r.overall.toFixed(1)}">${stars(r.overall)}</span><span class="muted small" dir="ltr">${esc(r.created_at.slice(0, 10))}</span></div>${r.comment ? `<p dir="auto">${esc(r.comment)}</p>` : ''}</article>`).join('')}</div>
+  </section>`;
+}
+
+export function directoryPage(lang, categories) {
+  const body = `<header class="top"><div class="wrap row">
+    <a class="brand" href="/?lang=${lang}">${LOGO}<span><b>Nobat</b><small>${esc(t(lang, 'findTitle'))}</small></span></a>
+    ${langSwitch(lang, '/')}</div></header>
+  <main class="wrap stack">
+    <form class="search card stack" id="searchForm" role="search">
+      <h1>${esc(t(lang, 'findTitle'))}</h1>
+      <div class="searchrow"><input id="q" type="search" placeholder="${esc(t(lang, 'findPh'))}" autocomplete="off" aria-label="${esc(t(lang, 'search'))}">
+        <button class="btn primary">${esc(t(lang, 'search'))}</button>
+        <button type="button" class="btn ghost" id="near">📍 ${esc(t(lang, 'nearMe'))}</button></div>
+      <div class="kindtabs" role="group"><button type="button" class="chip" data-kind="" aria-pressed="true">${esc(t(lang, 'all'))}</button><button type="button" class="chip" data-kind="clinic" aria-pressed="false">${esc(t(lang, 'doctorsTab'))}</button><button type="button" class="chip" data-kind="salon" aria-pressed="false">${esc(t(lang, 'salonsTab'))}</button></div>
+      <div class="cats" id="cats"></div>
+      <p class="muted small" id="status" role="status"></p>
+    </form>
+    <div class="row"><div class="viewtabs" role="group"><button type="button" class="chip" data-view="list" aria-pressed="true">${esc(t(lang, 'listView'))}</button><button type="button" class="chip" data-view="map" aria-pressed="false">${esc(t(lang, 'mapView'))}</button></div></div>
+    <div id="map" class="map" hidden></div>
+    <div id="results" class="stack"></div>
+    <p class="foot"><a href="/login">${esc(t(lang, 'staffSignIn'))}</a></p>
+  </main>`;
+  return page({
+    title: 'Nobat', lang, body, script: ['vendor/leaflet/leaflet.js', 'search.js'], head: '<link rel="stylesheet" href="/static/vendor/leaflet/leaflet.css">',
+    data: { lang, categories, t: dictFor(lang), catNames: Object.fromEntries(categories.map((c) => [c.key, c.name])) }
+  });
+}
+
+export function clinicPage(clinic, doctors, lang, reviews = '') {
   const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}`)}
   <main class="wrap stack">
     <h1>${esc(t(lang, 'chooseDoctor'))}</h1>
     <div class="cards">${doctors.map((d) => `
       <a class="card doc" href="/c/${esc(clinic.slug)}/d/${d.id}?lang=${lang}">
         <span class="av">${initials(d.name)}</span>
-        <span><b>${esc(d.name)}</b><span class="muted">${esc(d.specialty)}</span>
+        <span><b>${esc(d.name)}</b><span class="muted">${esc(d.specialty || categoryName(d.category, lang))}</span>
         <span class="fee">${esc(t(lang, 'fee'))}: ${iqd(d.fee_iqd)} ${esc(t(lang, 'iqd'))}</span></span>
       </a>`).join('') || '<p class="muted">—</p>'}
     </div>
+    ${reviews}
     <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
   </main>`;
   return page({ title: clinic.name, lang, body, manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name });
@@ -94,7 +134,7 @@ function contactForm(lang, choose) {
     </form>`;
 }
 
-export function salonPage(clinic, staff, services, lang, dev, choose) {
+export function salonPage(clinic, staff, services, lang, dev, choose, reviews = '') {
   const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}`)}
   <main class="wrap narrow stack">
     <section class="card stack">
@@ -114,6 +154,7 @@ export function salonPage(clinic, staff, services, lang, dev, choose) {
       <div class="summary" id="summary" hidden></div>
     </section>
     ${contactForm(lang, choose)}
+    ${reviews}
     <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
   </main>`;
   return page({ title: clinic.name, lang, body, manifest: `/c/${clinic.slug}/manifest.webmanifest`, appName: clinic.name, script: 'salon-book.js', data: { lang, dev, clinicId: clinic.id, t: dictFor(lang) } });
@@ -125,16 +166,17 @@ export function unavailablePage(clinic, lang) {
   return page({ title: clinic.name, lang, body });
 }
 
-export function ticketPage(booking, lang) {
+export function ticketPage(booking, lang, points = []) {
   const salon = booking.clinic_kind === 'salon';
   const body = `<header class="top"><div class="wrap row"><span class="brand">${LOGO}<span><b>${esc(booking.clinic_name)}</b><small>${esc(booking.doctor_name)}</small></span></span>${langSwitch(lang, `/t/${booking.token}`)}</div></header>
   <main class="wrap narrow stack">
     <section class="ticket" id="ticket" aria-live="polite"></section>
+    <form class="card stack" id="review" hidden></form>
     <p class="muted center">${esc(t(lang, salon ? 'keepLink' : 'keepOpen'))}</p>
     <button class="btn ghost" id="cancel" hidden>${esc(t(lang, 'cancel'))}</button>
     <p class="foot">${esc(t(lang, 'poweredBy'))}</p>
   </main>`;
-  return page({ title: booking.clinic_name, lang, body, script: 'ticket.js', data: { lang, token: booking.token, salon, t: dictFor(lang) } });
+  return page({ title: booking.clinic_name, lang, body, script: 'ticket.js', data: { lang, token: booking.token, salon, points, t: dictFor(lang) } });
 }
 
 // ---------- Staff pages ----------
@@ -153,7 +195,7 @@ export function loginPage(lang) {
 }
 
 function staffHeader(user, L, current) {
-  const tabs = [['/app', L.today], ['/app/patients', L.patients], ['/app/messages', L.messages]];
+  const tabs = [['/app', L.today], ['/app/patients', L.patients], ['/app/reviews', L.reviews], ['/app/messages', L.messages]];
   if (user.role === 'owner') tabs.push(['/app/settings', L.settings]);
   return `<header class="top"><div class="wrap row">
     <a class="brand" href="/app">${LOGO}<span><b>Nobat</b><small>${esc(user.clinic_name)} · ${esc(user.name)}</small></span></a>
@@ -211,6 +253,19 @@ export function messagesPage(user, clinic, rows) {
     <p class="muted">${esc(L.messagesIntro)}</p>
     <section class="card"><div class="tablewrap"><table><thead><tr><th>${esc(L.mWhen)}</th><th>${esc(L.mTo)}</th><th>${esc(L.mType)}</th><th>${esc(L.mChannel)}</th><th>${esc(L.mStatus)}</th><th>${esc(L.mBody)}</th></tr></thead><tbody>
     ${rows.map((m) => `<tr><td class="nowrap" dir="ltr">${esc(m.created_at)}</td><td class="nowrap" dir="ltr">${esc(m.to_phone)}</td><td>${esc(m.kind)}</td><td>${esc(m.channel)}</td><td><span class="pill ${m.status === 'failed' ? 'bad' : m.status === 'sent' ? 'good' : ''}">${esc(m.status)}</span>${m.error ? `<div class="muted small">${esc(m.error)}</div>` : ''}</td><td dir="auto">${esc(m.body)}</td></tr>`).join('') || `<tr><td colspan="6" class="muted">${esc(L.noMessages)}</td></tr>`}
+    </tbody></table></div></section>
+  </main>`);
+}
+
+export function staffReviewsPage(user, clinic, summary, points, reviews) {
+  const n = (v) => (v == null ? '–' : v.toFixed(1));
+  return staffPage(user, clinic, '/app/reviews', 'Reviews', (L) => `
+  <main class="wrap stack">
+    <h1>${esc(L.reviews)}</h1>
+    <p class="muted">${esc(L.reviewsIntro)}</p>
+    <div class="kpis"><div class="kpi"><span>${esc(L.overall)}</span><b>${n(summary.overall)} <small class="muted">(${summary.count})</small></b></div>${points.slice(0, 3).map((p) => `<div class="kpi"><span>${esc(p.name)}</span><b>${n(summary[p.key])}</b></div>`).join('')}</div>
+    <section class="card"><div class="tablewrap"><table><thead><tr><th>${esc(L.mWhen)}</th><th>${esc(L.colPatient)}</th><th>${esc(L.provider)}</th>${points.map((p) => `<th class="num">${esc(p.name)}</th>`).join('')}<th>${esc(L.comment)}</th></tr></thead><tbody>
+      ${reviews.map((r) => `<tr><td class="nowrap" dir="ltr">${esc(r.created_at.slice(0, 10))}</td><td>${esc(r.author)}</td><td>${esc(r.doctor || '')}</td>${points.map((p) => `<td class="num">${'★'.repeat(r[p.key])}</td>`).join('')}<td dir="auto">${esc(r.comment)}</td></tr>`).join('') || `<tr><td colspan="${4 + points.length}" class="muted">${esc(L.noReviewsYet)}</td></tr>`}
     </tbody></table></div></section>
   </main>`);
 }

@@ -214,3 +214,40 @@ tr.attn td:first-child { box-shadow: inset 3px 0 0 var(--warn); }
   table.cards-on-phone td { border: 0; padding: 0 8px; white-space: normal; }
   table.cards-on-phone td[data-label]::before { content: attr(data-label) ": "; color: var(--muted); font-size: 13px; }
 }
+
+/* Search, map, reviews */
+.search h1 { font-size: clamp(20px, 4.5vw, 28px); }
+.searchrow { display: flex; gap: 8px; flex-wrap: wrap; }
+.searchrow input { flex: 1 1 240px; }
+.kindtabs, .viewtabs, .cats, .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 12px; font-weight: 600; font-size: 13px; cursor: pointer; color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.cats { max-height: 92px; overflow-y: auto; }
+.map { height: min(60vh, 460px); border-radius: 14px; border: 1px solid var(--line); }
+.result { display: grid; gap: 8px; }
+.result.featured { border-color: var(--coral); box-shadow: 0 0 0 1px var(--coral); }
+.result .rname { color: var(--ink); text-decoration: none; font-size: 17px; }
+.result .tags .pill { font-weight: 600; }
+.docs { display: grid; gap: 6px; }
+.docrow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: space-between; text-decoration: none; color: var(--ink); background: var(--sunk); border-radius: 10px; padding: 8px 10px; }
+.docrow > span:first-child { flex: 1 1 200px; min-width: 0; }
+.rating { white-space: nowrap; font-weight: 600; font-size: 14px; }
+.stars { color: #e0a526; letter-spacing: 1px; }
+.stars.small { font-size: 13px; }
+.rating-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.big-rating { font-size: 34px; line-height: 1; }
+.points { display: grid; gap: 6px; }
+.points div { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 36px; gap: 10px; align-items: center; font-size: 14px; }
+.points meter { width: 100%; height: 10px; }
+.points meter::-webkit-meter-bar { background: var(--sunk); border: 0; border-radius: 5px; }
+.points meter::-webkit-meter-optimum-value { background: #e0a526; border-radius: 5px; }
+.points meter::-moz-meter-bar { background: #e0a526; border-radius: 5px; }
+.review { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 4px; }
+.review p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.rate-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.stars-input { display: inline-flex; gap: 2px; direction: ltr; }
+.star { border: 0; background: none; font-size: 30px; line-height: 1; color: var(--line); cursor: pointer; padding: 2px; }
+.star.on { color: #e0a526; }
+.thanks { font-weight: 700; color: var(--good); }
+tr.faded td { opacity: .5; }
+.leaflet-container { font: inherit; }

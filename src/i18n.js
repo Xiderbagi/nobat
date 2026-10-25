@@ -5,6 +5,13 @@ export const RTL = new Set(['ckb', 'ar']);
 
 const T = {
   en: {
+    oneReview: '1 review',
+    findTitle: 'Find a doctor or salon near you', findPh: 'Dentist, children\'s doctor, barber, clinic name…', search: 'Search', nearMe: 'Near me', locating: 'Finding where you are…',
+    locDenied: 'We couldn\'t get your location. Allow location in your browser settings, or search by city.', listView: 'List', mapView: 'Map', all: 'All',
+    doctorsTab: 'Doctors', salonsTab: 'Salons', featured: 'Featured', kmAway: '{km} km away', noResults: 'Nothing found. Try another word or category.', bookBtn: 'Book',
+    reviewsTitle: 'Reviews', nReviews: '{n} reviews', noReviews: 'No reviews yet.', rateVisit: 'How was your visit?', rateHint: 'Tap the stars. Your first name is shown with your review.',
+    yourComment: 'Anything to add? (optional)', sendReview: 'Send review', thanksReview: 'Thank you! Your review helps other patients.', needStars: 'Give stars for each point.',
+    staffSignIn: 'For clinics: sign in', fromFee: 'Visit fee', directions: 'Directions',
     unavailable: 'Online booking is not available right now.', unavailableHint: 'Please call the clinic to book.',
     msgBy: 'Send my messages by',
     keepLink: 'Save this link to see or cancel your booking.',
@@ -32,6 +39,13 @@ const T = {
     msgCode: 'Your Nobat code is {code}. It expires in 10 minutes.'
   },
   ckb: {
+    oneReview: '1 هەڵسەنگاندن',
+    findTitle: 'دکتۆر یان ساڵۆنێکی نزیک لە خۆت بدۆزەرەوە', findPh: 'ددان، دکتۆری منداڵان، سەرتاش، ناوی کلینیک…', search: 'گەڕان', nearMe: 'نزیک لە من', locating: 'شوێنەکەت دەدۆزینەوە…',
+    locDenied: 'نەمانتوانی شوێنەکەت بزانین. ڕێگە بە شوێن بدە لە ڕێکخستنەکانی وێبگەڕەکەت، یان بە ناوی شار بگەڕێ.', listView: 'لیست', mapView: 'نەخشە', all: 'هەموو',
+    doctorsTab: 'دکتۆرەکان', salonsTab: 'ساڵۆنەکان', featured: 'تایبەت', kmAway: '{km} کم دوور', noResults: 'هیچ شتێک نەدۆزرایەوە. وشە یان بەشێکی تر تاقی بکەرەوە.', bookBtn: 'نۆرە بگرە',
+    reviewsTitle: 'هەڵسەنگاندنەکان', nReviews: '{n} هەڵسەنگاندن', noReviews: 'هێشتا هیچ هەڵسەنگاندنێک نییە.', rateVisit: 'سەردانەکەت چۆن بوو؟', rateHint: 'ئەستێرەکان دابگرە. یەکەم ناوت لەگەڵ هەڵسەنگاندنەکەت دەردەکەوێت.',
+    yourComment: 'شتێکی ترت هەیە بیڵێیت؟ (ئارەزوومەندانە)', sendReview: 'ناردنی هەڵسەنگاندن', thanksReview: 'سوپاس! هەڵسەنگاندنەکەت یارمەتی نەخۆشەکانی تر دەدات.', needStars: 'بۆ هەر خاڵێک ئەستێرە بدە.',
+    staffSignIn: 'بۆ کلینیکەکان: چوونەژوورەوە', fromFee: 'نرخی سەردان', directions: 'ڕێنمایی ڕێگا',
     unavailable: 'ئێستا نۆرەگرتنی ئۆنلاین بەردەست نییە.', unavailableHint: 'تکایە بۆ نۆرەگرتن پەیوەندی بە کلینیکەوە بکە.',
     msgBy: 'نامەکانم بنێرە بە',
     keepLink: 'ئەم بەستەرە هەڵبگرە بۆ بینین یان هەڵوەشاندنەوەی نۆرەکەت.',
@@ -59,6 +73,13 @@ const T = {
     msgCode: 'کۆدی Nobat ـەکەت {code}ـە. دوای 10 خولەک بەسەردەچێت.'
   },
   ar: {
+    oneReview: 'تقييم واحد',
+    findTitle: 'ابحث عن طبيب أو صالون قريب منك', findPh: 'أسنان، طبيب أطفال، حلاق، اسم العيادة…', search: 'بحث', nearMe: 'قريب مني', locating: 'نحدد موقعك…',
+    locDenied: 'لم نتمكن من معرفة موقعك. اسمح بالموقع في إعدادات المتصفح، أو ابحث باسم المدينة.', listView: 'قائمة', mapView: 'خريطة', all: 'الكل',
+    doctorsTab: 'الأطباء', salonsTab: 'الصالونات', featured: 'مميز', kmAway: 'على بعد {km} كم', noResults: 'لم يُعثر على شيء. جرّب كلمة أو فئة أخرى.', bookBtn: 'احجز',
+    reviewsTitle: 'التقييمات', nReviews: '{n} تقييم', noReviews: 'لا توجد تقييمات بعد.', rateVisit: 'كيف كانت زيارتك؟', rateHint: 'اضغط على النجوم. يظهر اسمك الأول مع تقييمك.',
+    yourComment: 'هل تريد إضافة شيء؟ (اختياري)', sendReview: 'إرسال التقييم', thanksReview: 'شكراً! تقييمك يساعد المرضى الآخرين.', needStars: 'أعطِ نجوماً لكل نقطة.',
+    staffSignIn: 'للعيادات: تسجيل الدخول', fromFee: 'الكشفية', directions: 'الاتجاهات',
     unavailable: 'الحجز عبر الإنترنت غير متاح حالياً.', unavailableHint: 'يرجى الاتصال بالعيادة للحجز.',
     msgBy: 'أرسل رسائلي عبر',
     keepLink: 'احفظ هذا الرابط لرؤية حجزك أو إلغائه.',

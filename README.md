@@ -40,6 +40,14 @@ npm start                         # open http://localhost:3000/login
 
 Until WhatsApp or SMS is set up, nothing is actually sent. Messages are printed in the terminal and listed under **Messages**. In this test mode, the booking page also shows the SMS code on screen.
 
+## Search, map, featured clinics and reviews
+
+- **The home page is a search** for patients: by category (dentist, children's doctor, men's barber, women's salon and more), by words in Kurdish, Arabic or English, or **near me** (uses the phone's location). Results show as a list or on a map.
+- **Clinic owners** set their location and what they offer under **Settings → Nobat search** (doctors get a category; salons tick what they offer). They can also hide the clinic from search.
+- **Featured clinics** show first, marked "Featured". You switch it on per clinic in the admin screen with a "featured until" date, and charge for it.
+- **Reviews:** after a finished visit, the patient's booking page asks them to rate four points (for clinics: waiting time, cleanliness, the doctor, value for money) and leave a comment. Only real visits can be reviewed, once each. Clinics see their reviews under **Reviews**; you can hide abusive ones in the admin screen.
+- **Map tiles** come from OpenStreetMap, which is fine for a small start. When traffic grows, switch to a paid map tile provider (change the address in `public/search.js` and in the security policy in `src/server.js`).
+
 ## Your admin screen
 
 Add clinics, see how each is doing, record payments, reset passwords and switch clinics off and on, all at `your-address/admin`.

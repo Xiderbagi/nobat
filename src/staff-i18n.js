@@ -5,6 +5,10 @@ export const STAFF_LANGS = ['ckb', 'ar', 'en'];
 
 const S = {
   en: {
+    reviews: 'Reviews', reviewsIntro: 'What patients said after their visit. Only patients who came can review, once per visit.', overall: 'Overall', comment: 'Comment', noReviewsYet: 'No reviews yet. Patients can review from their booking link after the visit.',
+    findSection: 'Nobat search', listedLabel: 'Show us in Nobat search', locationLabel: 'Location on the map', useHere: 'Use my current location', pasteMaps: 'Or paste a Google Maps link',
+    lat: 'Latitude', lng: 'Longitude', locSet: 'Location set. Save to keep it.', locFail: "Couldn't read a location. Try 'Use my current location' while at the clinic, or a full Google Maps link.",
+    findTags: 'What do you offer? (customers search by these)', category: 'Shown in search as', categoryHint: 'Patients find this doctor when they search for it.', chooseCategory: 'Choose…', findHint: 'Set your location so patients nearby find you. Stand in the clinic and press the button.',
     clinicOff: 'This account is switched off. Please contact Nobat.',
     doesServices: 'Services this person does', doesServicesHint: 'Leave all unticked if they do everything. "Anyone free" bookings only go to people who do the chosen services.',
     badPhone: 'That mobile number is not valid. Use the format 0750 123 4567.', st_cancelled: 'Cancelled',
@@ -46,6 +50,10 @@ const S = {
     printPoster: 'Print', posterHelp: 'Print on A4 or A5 and put it in the waiting room, at reception and on the door.'
   },
   ckb: {
+    reviews: 'هەڵسەنگاندنەکان', reviewsIntro: 'ئەوەی نەخۆشەکان دوای سەردان وتوویانە. تەنها ئەو نەخۆشانەی هاتوون دەتوانن هەڵیبسەنگێنن، یەک جار بۆ هەر سەردانێک.', overall: 'گشتی', comment: 'تێبینی', noReviewsYet: 'هێشتا هیچ هەڵسەنگاندنێک نییە. نەخۆشەکان دوای سەردان لە بەستەری نۆرەکەیانەوە هەڵدەسەنگێنن.',
+    findSection: 'گەڕانی Nobat', listedLabel: 'لە گەڕانی Nobat پیشانمان بدە', locationLabel: 'شوێن لەسەر نەخشە', useHere: 'شوێنی ئێستام بەکاربهێنە', pasteMaps: 'یان بەستەرێکی Google Maps دابنێ',
+    lat: 'هێڵی پانی', lng: 'هێڵی درێژی', locSet: 'شوێن دیاری کرا. پاشەکەوتی بکە.', locFail: 'نەمانتوانی شوێنەکە بخوێنینەوە. کاتێک لە کلینیکیت «شوێنی ئێستام» تاقی بکەرەوە، یان بەستەرێکی تەواوی Google Maps.',
+    findTags: 'چی پێشکەش دەکەن؟ (کڕیاران بەمانە دەگەڕێن)', category: 'لە گەڕاندا وەک ئەمە دەردەکەوێت', categoryHint: 'نەخۆشەکان کاتێک بەمە دەگەڕێن ئەم دکتۆرە دەدۆزنەوە.', chooseCategory: 'هەڵبژێرە…', findHint: 'شوێنەکەت دیاری بکە تا نەخۆشانی نزیک بتدۆزنەوە. لە ناو کلینیک وەستە و دوگمەکە دابگرە.',
     clinicOff: 'ئەم هەژمارە ڕاگیراوە. تکایە پەیوەندی بە Nobat ـەوە بکە.',
     doesServices: 'ئەو خزمەتگوزارییانەی ئەم کەسە دەیکات', doesServicesHint: 'ئەگەر هەموو شتێک دەکات، هیچیان دیاری مەکە. نۆرەکانی «هەر کەسێکی بەتاڵ» تەنها دەچن بۆ ئەو کەسانەی خزمەتگوزارییە هەڵبژێردراوەکان دەکەن.',
     badPhone: 'ئەو ژمارە مۆبایلە دروست نییە. بەم شێوەیە بینووسە: 0750 123 4567.', st_cancelled: 'هەڵوەشێندرایەوە',
@@ -87,6 +95,10 @@ const S = {
     printPoster: 'چاپکردن', posterHelp: 'لەسەر A4 یان A5 چاپی بکە و لە هۆڵی چاوەڕوانی، پێشوازی و دەرگا دایبنێ.'
   },
   ar: {
+    reviews: 'التقييمات', reviewsIntro: 'ما قاله المرضى بعد زيارتهم. فقط من حضر يمكنه التقييم، مرة لكل زيارة.', overall: 'العام', comment: 'التعليق', noReviewsYet: 'لا توجد تقييمات بعد. يقيّم المرضى من رابط حجزهم بعد الزيارة.',
+    findSection: 'بحث Nobat', listedLabel: 'أظهرنا في بحث Nobat', locationLabel: 'الموقع على الخريطة', useHere: 'استخدم موقعي الحالي', pasteMaps: 'أو الصق رابط خرائط Google',
+    lat: 'خط العرض', lng: 'خط الطول', locSet: 'تم تحديد الموقع. احفظ لتثبيته.', locFail: 'تعذرت قراءة الموقع. جرّب «موقعي الحالي» وأنت في العيادة، أو رابط خرائط Google كاملاً.',
+    findTags: 'ماذا تقدمون؟ (يبحث الزبائن بهذه)', category: 'يظهر في البحث كـ', categoryHint: 'يجد المرضى هذا الطبيب عندما يبحثون عن هذا.', chooseCategory: 'اختر…', findHint: 'حدد موقعك ليجدك المرضى القريبون. قف داخل العيادة واضغط الزر.',
     clinicOff: 'هذا الحساب موقوف. يرجى التواصل مع Nobat.',
     doesServices: 'الخدمات التي يقدمها هذا الشخص', doesServicesHint: 'اترك الكل بدون اختيار إذا كان يقدم كل شيء. حجوزات «أي شخص متاح» تذهب فقط لمن يقدم الخدمات المختارة.',
     badPhone: 'رقم الموبايل غير صحيح. استخدم هذا الشكل: 0750 123 4567.', st_cancelled: 'ملغى',

@@ -15,6 +15,8 @@ import {
 import { checkSecret, displayPhone, hashSecret, isClock, isIsoDate, localParts, normalizePhone, otpCode } from './util.js';
 import * as views from './views.js';
 import { adminRouter } from './admin.js';
+import { search, categoriesFor, ratingSummary, reviewPoints } from './directory.js';
+import { isCategory } from './categories.js';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const OTP_TTL = 10 * 60 * 1000;
@@ -31,10 +33,12 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'same-origin',
       'X-Frame-Options': 'DENY',
-      'Content-Security-Policy': "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'"
+      // Map tiles come from OpenStreetMap.
+      'Content-Security-Policy': "default-src 'self'; img-src 'self' data: https://tile.openstreetmap.org; style-src 'self'; script-src 'self'; connect-src 'self'; frame-ancestors 'none'"
     });
     next();
   });
+  app.use('/static/vendor/leaflet', express.static(join(ROOT, 'node_modules', 'leaflet', 'dist'), { maxAge: '7d' }));
   app.use('/static', express.static(join(ROOT, 'public'), { maxAge: dev ? 0 : '1h' }));
   app.use('/admin', adminRouter(db, { baseUrl, secure: baseUrl.startsWith('https') }));
   app.use(loadUser(db));
@@ -87,7 +91,25 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
   app.get('/healthz', (_req, res) => { db.prepare('SELECT 1').get(); res.json({ ok: true }); });
 
   // ---------- Patient / customer pages ----------
-  app.get('/', (_req, res) => res.redirect('/login'));
+  // Home page: search for clinics and salons.
+  app.get('/', (req, res) => {
+    const lang = langOf(req); rememberLang(req, res, lang);
+    res.send(views.directoryPage(lang, categoriesFor(lang)));
+  });
+
+  app.get('/api/p/search', (req, res) => {
+    const num = (v) => (v === undefined || v === '' ? null : Number(v));
+    const lat = num(req.query.lat), lng = num(req.query.lng);
+    const ok = (v, max) => v !== null && Number.isFinite(v) && Math.abs(v) <= max;
+    res.json({ results: search(db, {
+      q: String(req.query.q || '').slice(0, 80), cat: String(req.query.cat || ''),
+      kind: ['clinic', 'salon'].includes(req.query.kind) ? req.query.kind : '',
+      lat: ok(lat, 90) && ok(lng, 180) ? lat : null, lng: ok(lat, 90) && ok(lng, 180) ? lng : null
+    }) });
+  });
+
+  const reviewsHtml = (clinic, lang) => views.reviewsBlock(lang, ratingSummary(db, clinic.id), reviewPoints(clinic.kind, lang),
+    db.prepare('SELECT author, overall, comment, created_at FROM reviews WHERE clinic_id = ? AND hidden = 0 ORDER BY id DESC LIMIT 20').all(clinic.id));
 
   app.get('/c/:slug', (req, res) => {
     const clinic = clinicBySlug(req.params.slug);
@@ -95,8 +117,8 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const lang = langOf(req); rememberLang(req, res, lang);
     if (clinic.status === 'off') return unavailable(res, clinic, lang);
     const staff = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? AND active = 1 ORDER BY name').all(clinic.id);
-    if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev, canChooseChannel()));
-    res.send(views.clinicPage(clinic, staff, lang));
+    if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev, canChooseChannel(), reviewsHtml(clinic, lang)));
+    res.send(views.clinicPage(clinic, staff, lang, reviewsHtml(clinic, lang)));
   });
 
   app.get('/c/:slug/d/:id', (req, res) => {
@@ -113,7 +135,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const b = getBookingByToken(db, req.params.token);
     if (!b) return res.status(404).send('Not found');
     const lang = req.query.lang ? langOf(req) : b.lang; rememberLang(req, res, lang);
-    res.send(views.ticketPage(b, lang));
+    res.send(views.ticketPage(b, lang, reviewPoints(b.clinic_kind, lang)));
   });
 
   // ---------- Patient API ----------
@@ -223,7 +245,25 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
   app.get('/api/p/t/:token', (req, res) => {
     const b = getBookingByToken(db, req.params.token);
     if (!b) return res.status(404).json({ error: 'error' });
-    res.json({ ...ticketStatus(db, b), salon: b.clinic_kind === 'salon', staff: b.doctor_name, services: b.service_names });
+    const reviewed = Boolean(db.prepare('SELECT 1 FROM reviews WHERE booking_id = ?').get(b.id));
+    res.json({ ...ticketStatus(db, b), salon: b.clinic_kind === 'salon', staff: b.doctor_name, services: b.service_names, canReview: b.status === 'done' && !reviewed && Boolean(b.patient_id), reviewed });
+  });
+
+  // A review can only come from a finished visit, once per visit.
+  app.post('/api/p/t/:token/review', (req, res) => {
+    const b = getBookingByToken(db, req.params.token);
+    if (!b || b.status !== 'done' || !b.patient_id) return res.status(409).json({ error: 'error' });
+    const pts = ['a1', 'a2', 'a3', 'a4'].map((k) => Math.round(Number(req.body[k])));
+    if (pts.some((v) => !(v >= 1 && v <= 5))) return res.status(400).json({ error: 'needStars' });
+    const first = String(b.patient_name || '').trim().split(/\s+/)[0].slice(0, 30);
+    try {
+      db.prepare('INSERT INTO reviews (clinic_id, doctor_id, booking_id, a1, a2, a3, a4, overall, comment, author, lang) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(b.clinic_id, b.doctor_id, b.id, ...pts, pts.reduce((a, v) => a + v, 0) / 4, String(req.body.comment || '').trim().slice(0, 1000), first, pickLang(req.body.lang));
+    } catch (e) {
+      if (String(e.message).includes('UNIQUE')) return res.status(409).json({ error: 'error' });
+      throw e;
+    }
+    res.json({ ok: true });
   });
 
   app.post('/api/p/t/:token/cancel', (req, res) => {
@@ -273,6 +313,10 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     res.send(views.settingsPage(req.user, clinic));
   }));
   app.get('/app/patients', ...staffPage((req, res, clinic) => res.send(views.patientsPage(req.user, clinic))));
+  app.get('/app/reviews', ...staffPage((req, res, clinic) => {
+    const reviews = db.prepare(`SELECT r.*, d.name AS doctor FROM reviews r LEFT JOIN doctors d ON d.id = r.doctor_id WHERE r.clinic_id = ? AND r.hidden = 0 ORDER BY r.id DESC LIMIT 200`).all(clinic.id);
+    res.send(views.staffReviewsPage(req.user, clinic, ratingSummary(db, clinic.id), reviewPoints(clinic.kind, req.user.lang), reviews));
+  }));
   app.get('/app/patients/:id', ...staffPage((req, res, clinic) => {
     if (!ownPatient(req, req.params.id)) return res.redirect('/app/patients');
     res.send(views.patientFilePage(req.user, clinic, Number(req.params.id)));
@@ -414,19 +458,23 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
 
   // ---------- Owner settings ----------
   api.get('/settings', requireOwner, (req, res) => {
-    const clinic = db.prepare('SELECT id, name, slug, city, address, phone, kind FROM clinics WHERE id = ?').get(req.user.clinic_id);
+    const clinic = db.prepare('SELECT id, name, slug, city, address, phone, kind, lat, lng, tags, listed FROM clinics WHERE id = ?').get(req.user.clinic_id);
     const doctors = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? ORDER BY active DESC, name').all(clinic.id)
       .map((d) => ({ ...d, schedules: db.prepare('SELECT weekday, start_time, end_time FROM schedules WHERE doctor_id = ? ORDER BY weekday, start_time').all(d.id),
         serviceIds: db.prepare('SELECT service_id FROM staff_services WHERE doctor_id = ?').all(d.id).map((r) => r.service_id) }));
     const users = db.prepare('SELECT id, name, email, role, doctor_id FROM users WHERE clinic_id = ? ORDER BY role, name').all(clinic.id);
     const services = db.prepare('SELECT * FROM services WHERE clinic_id = ? ORDER BY active DESC, name').all(clinic.id);
-    res.json({ clinic, doctors, users, services, baseUrl });
+    res.json({ clinic, doctors, users, services, baseUrl, categories: categoriesFor(req.user.lang).filter((c) => c.kind === clinic.kind) });
   });
 
   api.put('/clinic', requireOwner, (req, res) => {
     const f = (k, n) => String(req.body[k] || '').trim().slice(0, n);
     if (!f('name', 80)) return res.status(400).json({ error: 'needProviderName' });
-    db.prepare('UPDATE clinics SET name = ?, city = ?, address = ?, phone = ? WHERE id = ?').run(f('name', 80), f('city', 40), f('address', 120), f('phone', 20), req.user.clinic_id);
+    const lat = Number(req.body.lat), lng = Number(req.body.lng);
+    const hasPlace = req.body.lat !== '' && req.body.lat != null && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
+    const tags = (Array.isArray(req.body.tags) ? req.body.tags : []).filter(isCategory).slice(0, 8).join(',');
+    db.prepare('UPDATE clinics SET name = ?, city = ?, address = ?, phone = ?, lat = ?, lng = ?, tags = ?, listed = ? WHERE id = ?')
+      .run(f('name', 80), f('city', 40), f('address', 120), f('phone', 20), hasPlace ? lat : null, hasPlace ? lng : null, tags, req.body.listed === false ? 0 : 1, req.user.clinic_id);
     res.json({ ok: true });
   });
 
@@ -444,15 +492,15 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     }
     const salon = clinicOf(req).kind === 'salon';
     const values = [name, String(b.specialty || '').trim().slice(0, 60), int(b.fee_iqd, 0, 10_000_000, 0), salon || b.mode === 'time' ? 'time' : 'queue',
-      int(b.slot_minutes, 5, 120, 15), int(b.avg_minutes, 2, 120, 10), int(b.daily_limit, 1, 500, 40), b.active === false ? 0 : 1];
+      int(b.slot_minutes, 5, 120, 15), int(b.avg_minutes, 2, 120, 10), int(b.daily_limit, 1, 500, 40), b.active === false ? 0 : 1, isCategory(b.category) ? b.category : null];
     const id = tx(db, () => {
       let doctorId = Number(b.id) || null;
       if (doctorId) {
         if (!ownDoctor(req, doctorId)) throw Object.assign(new Error('nf'), { status: 404 });
-        db.prepare('UPDATE doctors SET name = ?, specialty = ?, fee_iqd = ?, mode = ?, slot_minutes = ?, avg_minutes = ?, daily_limit = ?, active = ? WHERE id = ?').run(...values, doctorId);
+        db.prepare('UPDATE doctors SET name = ?, specialty = ?, fee_iqd = ?, mode = ?, slot_minutes = ?, avg_minutes = ?, daily_limit = ?, active = ?, category = ? WHERE id = ?').run(...values, doctorId);
         db.prepare('DELETE FROM schedules WHERE doctor_id = ?').run(doctorId);
       } else {
-        doctorId = Number(db.prepare('INSERT INTO doctors (name, specialty, fee_iqd, mode, slot_minutes, avg_minutes, daily_limit, active, clinic_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(...values, req.user.clinic_id).lastInsertRowid);
+        doctorId = Number(db.prepare('INSERT INTO doctors (name, specialty, fee_iqd, mode, slot_minutes, avg_minutes, daily_limit, active, category, clinic_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(...values, req.user.clinic_id).lastInsertRowid);
       }
       const ins = db.prepare('INSERT INTO schedules (doctor_id, weekday, start_time, end_time) VALUES (?, ?, ?, ?)');
       for (const s of schedules) ins.run(doctorId, s.weekday, s.start_time, s.end_time);

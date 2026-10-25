@@ -17,11 +17,34 @@
   function clinicForm() {
     const c = S.clinic;
     const url = `${S.baseUrl}/c/${c.slug}`;
-    return el('form', { class: 'card stack', onsubmit: (e) => { e.preventDefault(); save('/api/s/clinic', 'PUT', { name: val('c_name').value, city: val('c_city').value, address: val('c_address').value, phone: val('c_phone').value }); } },
+    // Reads a location from a Google Maps link: ".../@36.19,44.01,15z", "?q=36.19,44.01" or "!3d36.19!4d44.01".
+    const fromLink = (s) => {
+      const m = /@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(s) || /[?&](?:q|ll|query)=(-?\d+\.\d+),\s*(-?\d+\.\d+)/.exec(s) || /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/.exec(s) || /^\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*$/.exec(s);
+      return m ? [Number(m[1]), Number(m[2])] : null;
+    };
+    const setPlace = (lat, lng) => { val('c_lat').value = lat.toFixed(5); val('c_lng').value = lng.toFixed(5); toast(tr('locSet')); };
+    const tagBoxes = salon ? el('fieldset', { class: 'svcpick' }, el('legend', {}, tr('findTags')),
+      el('div', { class: 'checks' }, S.categories.map((cat) => el('label', { class: 'check' }, el('input', { type: 'checkbox', class: 'c_tag', value: cat.key, checked: (c.tags || '').split(',').includes(cat.key) }), cat.name)))) : null;
+    return el('form', { class: 'card stack', onsubmit: (e) => {
+      e.preventDefault();
+      save('/api/s/clinic', 'PUT', { name: val('c_name').value, city: val('c_city').value, address: val('c_address').value, phone: val('c_phone').value,
+        lat: val('c_lat').value, lng: val('c_lng').value, listed: val('c_listed').checked, tags: [...root.querySelectorAll('.c_tag:checked')].map((i) => i.value) });
+    } },
       el('h2', {}, tr('clinicSection')),
       el('div', { class: 'grid2' }, field(tr('cName'), input('c_name', c.name, { maxlength: 80 })), field(tr('cCity'), input('c_city', c.city, { maxlength: 40 })),
         field(tr('cAddress'), input('c_address', c.address, { maxlength: 120 })), field(tr('cPhone'), input('c_phone', c.phone, { maxlength: 20, dir: 'ltr' }))),
       el('p', { class: 'muted small' }, tr('bookHere'), ' ', el('a', { href: `/c/${c.slug}`, target: '_blank', rel: 'noopener', dir: 'ltr' }, url), '. ', tr('qrHint'), ' ', el('a', { href: '/app/poster' }, tr('poster'))),
+      el('h3', {}, tr('findSection')),
+      el('label', { class: 'check' }, el('input', { type: 'checkbox', id: 'c_listed', checked: c.listed !== 0 }), tr('listedLabel')),
+      tagBoxes,
+      el('fieldset', { class: 'svcpick' }, el('legend', {}, tr('locationLabel')),
+        el('p', { class: 'muted small' }, tr('findHint')),
+        el('div', { class: 'row' }, el('button', { type: 'button', class: 'btn ghost small', onclick: () => {
+          if (!navigator.geolocation) return toast(tr('locFail'));
+          navigator.geolocation.getCurrentPosition((pos) => setPlace(pos.coords.latitude, pos.coords.longitude), () => toast(tr('locFail')), { enableHighAccuracy: true, timeout: 15000 });
+        } }, '📍 ' + tr('useHere'))),
+        field(tr('pasteMaps'), input('c_maplink', '', { dir: 'ltr', placeholder: 'https://www.google.com/maps/…', onchange: (e) => { const p = fromLink(e.target.value); if (p) setPlace(p[0], p[1]); else toast(tr('locFail')); } })),
+        el('div', { class: 'grid2' }, field(tr('lat'), input('c_lat', c.lat ?? '', { dir: 'ltr', inputmode: 'decimal' })), field(tr('lng'), input('c_lng', c.lng ?? '', { dir: 'ltr', inputmode: 'decimal' })))),
       el('button', { class: 'btn primary' }, tr('save')));
   }
 
@@ -46,7 +69,7 @@
       e.preventDefault();
       const schedules = ORDER.filter((wd) => v('on' + wd).checked).map((wd) => ({ weekday: wd, start_time: v('from' + wd).value, end_time: v('to' + wd).value }));
       save('/api/s/doctors', 'POST', {
-        id: d.id, name: v('name').value, specialty: v('spec').value, fee_iqd: salon ? 0 : v('fee').value, mode: salon ? 'time' : v('mode').value,
+        id: d.id, name: v('name').value, specialty: v('spec').value, category: salon ? null : v('cat').value, fee_iqd: salon ? 0 : v('fee').value, mode: salon ? 'time' : v('mode').value,
         slot_minutes: salon ? 15 : v('slot').value, avg_minutes: salon ? 30 : v('avg').value, daily_limit: v('limit').value, active: v('active').checked, schedules,
         serviceIds: salon ? [...root.querySelectorAll('.' + p + 'svc:checked')].map((i) => Number(i.value)) : undefined
       });
@@ -55,6 +78,7 @@
       el('div', { class: 'grid2' },
         field(tr('name'), input(p + 'name', d.name, { maxlength: 80 })),
         field(tr('specialty'), input(p + 'spec', d.specialty, { maxlength: 60, placeholder: tr('specialtyPh') })),
+        salon ? null : field(tr('category'), el('select', { id: p + 'cat' }, el('option', { value: '' }, tr('chooseCategory')), S.categories.map((cat) => el('option', { value: cat.key, selected: d.category === cat.key }, cat.name))), tr('categoryHint')),
         ...clinicFields,
         field(tr('dailyLimit'), input(p + 'limit', d.daily_limit, { type: 'number', min: 1, max: 500 }))),
       el('div', { class: 'tablewrap' }, el('table', { class: 'sched' }, el('thead', {}, el('tr', {}, el('th', {}, tr('workDay')), el('th', {}, tr('from')), el('th', {}, tr('to')))), el('tbody', {}, rows))),

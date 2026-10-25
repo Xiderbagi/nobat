@@ -194,6 +194,32 @@ const MIGRATIONS = [
     admin_id INTEGER REFERENCES admins(id),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+  `,
+  // 5: search and map, featured (paid) placement, reviews
+  `
+  ALTER TABLE doctors ADD COLUMN category TEXT;
+  ALTER TABLE clinics ADD COLUMN tags TEXT NOT NULL DEFAULT '';
+  ALTER TABLE clinics ADD COLUMN lat REAL;
+  ALTER TABLE clinics ADD COLUMN lng REAL;
+  ALTER TABLE clinics ADD COLUMN listed INTEGER NOT NULL DEFAULT 1;
+  ALTER TABLE clinics ADD COLUMN featured_until TEXT;
+  CREATE TABLE reviews (
+    id INTEGER PRIMARY KEY,
+    clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+    doctor_id INTEGER REFERENCES doctors(id),
+    booking_id INTEGER NOT NULL UNIQUE REFERENCES bookings(id),
+    a1 INTEGER NOT NULL CHECK (a1 BETWEEN 1 AND 5),
+    a2 INTEGER NOT NULL CHECK (a2 BETWEEN 1 AND 5),
+    a3 INTEGER NOT NULL CHECK (a3 BETWEEN 1 AND 5),
+    a4 INTEGER NOT NULL CHECK (a4 BETWEEN 1 AND 5),
+    overall REAL NOT NULL,
+    comment TEXT NOT NULL DEFAULT '',
+    author TEXT NOT NULL DEFAULT '',
+    lang TEXT NOT NULL DEFAULT 'ckb',
+    hidden INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX reviews_clinic ON reviews (clinic_id, hidden);
   `
 ];
 

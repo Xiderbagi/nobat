@@ -30,11 +30,14 @@ function addDemoStaff(db, clinicId, kind) {
     }
     const svc = db.prepare('INSERT INTO services (clinic_id, name, price_iqd, minutes, rebook_weeks) VALUES (?, ?, ?, ?, ?)');
     for (const row of [['Haircut and blow-dry', 25000, 60, 6], ['Hair color', 60000, 90, 6], ['Manicure', 15000, 45, 3], ['Eyebrows', 7000, 15, 3], ['Bridal makeup', 150000, 120, 0]]) svc.run(clinicId, ...row);
+    // Example place in Erbil so it shows on the search map; the owner sets the real one in Settings.
+    db.prepare("UPDATE clinics SET tags = 'salon_women,nails,makeup', lat = 36.2160, lng = 43.9950 WHERE id = ? AND lat IS NULL").run(clinicId);
     return;
   }
-  const add = db.prepare('INSERT INTO doctors (clinic_id, name, specialty, fee_iqd, mode, slot_minutes, avg_minutes) VALUES (?, ?, ?, ?, ?, ?, ?)');
-  const queueDoc = Number(add.run(clinicId, 'Dr. Shilan Ahmed', "Children's doctor", 25000, 'queue', 15, 8).lastInsertRowid);
-  const timeDoc = Number(add.run(clinicId, 'Dr. Karzan Omar', 'Dentist', 20000, 'time', 20, 20).lastInsertRowid);
+  const add = db.prepare('INSERT INTO doctors (clinic_id, name, specialty, fee_iqd, mode, slot_minutes, avg_minutes, category) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+  const queueDoc = Number(add.run(clinicId, 'Dr. Shilan Ahmed', "Children's doctor", 25000, 'queue', 15, 8, 'children').lastInsertRowid);
+  const timeDoc = Number(add.run(clinicId, 'Dr. Karzan Omar', 'Dentist', 20000, 'time', 20, 20, 'dentist').lastInsertRowid);
+  db.prepare('UPDATE clinics SET lat = 36.1912, lng = 44.0092 WHERE id = ? AND lat IS NULL').run(clinicId);
   for (const wd of [6, 0, 1, 2, 3, 4]) { hours.run(queueDoc, wd, '16:00', '21:00'); hours.run(timeDoc, wd, '15:00', '20:00'); }
 }
 
