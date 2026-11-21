@@ -29,7 +29,7 @@ Patients book online and follow their turn; staff run the day from a reception s
 ## Map of the code
 
 - `src/server.js`: routes and APIs. `src/views.js`: all HTML pages. `src/admin.js`: the owner's admin screen at `/admin`.
-- `src/queue.js`: booking rules. `src/policy.js`: cancelling (24 h), lateness hold (15 min) and no-show limits (3), set per clinic.
+- `src/queue.js`: booking rules. `hoursFor()` is the one place that decides bookable hours: the doctor's schedule, inside the clinic's opening hours (`clinic_hours`, when `hours_on`), minus `time_off`. `src/policy.js`: cancelling (24 h), lateness hold (15 min) and no-show limits (3), set per clinic.
 - `src/directory.js` and `src/categories.js`: search, categories, map. `src/uploads.js`: photos. `src/notify.js`: SMS.
 - `public/`: browser scripts and `app.css`. `public/icons/`: the app icon (English N, wood line, Kurdish ن, on navy).
 - Look: navy `#1b2a4a`, white and wood `#c69563` on the main pages. The salon and spa pages (`body.beauty`) use calm cream, sage and clay.
@@ -38,7 +38,7 @@ Patients book online and follow their turn; staff run the day from a reception s
 
 - `/`: only three tall pictures, in this order: Clinics and doctors, Spa and wellness, Salons and barbers plus Cancellation policy and Support desk links.
 - `/clinics` and `/beauty`: search pages. `/c/:slug`: a clinic's page. `/t/:token`: a customer's ticket.
-- `/app`: staff screens. `/admin`: the owner (clinics, payments, website photos, no-shows and bans, support inbox).
+- `/app`: staff screens (`/app/hours`: opening hours and blocked time off). `/admin`: the owner (clinics, payments, website photos, no-shows and bans, support inbox).
 
 ## Still to do
 

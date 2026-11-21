@@ -23,6 +23,13 @@ export const CATEGORIES = [
   { key: 'kids_hair', kind: 'salon', en: "Children's haircut", ckb: 'قژبڕینی منداڵان', ar: 'قص شعر أطفال', words: 'kids children haircut منداڵ أطفال' }
 ];
 
+// Usual visit length per clinic specialty, in minutes: [fixed-time visit, average queue visit].
+// Filled in when a doctor's specialty is chosen in Settings; the clinic can change it.
+export const VISIT_MINUTES = {
+  gp: [15, 10], dentist: [30, 20], children: [15, 10], women: [20, 15], heart: [20, 15], skin: [20, 15], eyes: [15, 10],
+  ent: [15, 10], bones: [20, 15], internal: [20, 15], nerves: [30, 20], urology: [20, 15], mental: [45, 40], physio: [45, 40]
+};
+
 const BY_KEY = new Map(CATEGORIES.map((c) => [c.key, c]));
 export const isCategory = (key) => BY_KEY.has(key);
 export const categoryName = (key, lang) => { const c = BY_KEY.get(key); return c ? c[lang] || c.en : ''; };

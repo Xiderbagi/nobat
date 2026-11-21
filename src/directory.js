@@ -1,5 +1,5 @@
 // Public search: find clinics and salons by category or words, nearest first, featured (paid) ones on top.
-import { CATEGORIES, categoriesForText, fold, isCategory, REVIEW_POINTS } from './categories.js';
+import { CATEGORIES, VISIT_MINUTES, categoriesForText, fold, isCategory, REVIEW_POINTS } from './categories.js';
 import { localParts } from './util.js';
 import { avatarTone } from './icons.js';
 import { photoUrl } from './uploads.js';
@@ -78,7 +78,7 @@ export function search(db, { q = '', cat = '', lat = null, lng = null, kind = ''
 }
 
 export function categoriesFor(lang) {
-  return CATEGORIES.map((c) => ({ key: c.key, kind: c.kind, name: c[lang] || c.en }));
+  return CATEGORIES.map((c) => ({ key: c.key, kind: c.kind, name: c[lang] || c.en, ...(VISIT_MINUTES[c.key] ? { minutes: VISIT_MINUTES[c.key] } : {}) }));
 }
 
 export function reviewPoints(kind, lang) {

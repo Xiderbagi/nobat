@@ -501,3 +501,30 @@ body:not(.beauty) .hero-band #status { color: var(--muted); }
 .card, .cat-tile, .result { border-color: var(--line); }
 .cat-tile { border: 1px solid var(--line); }
 .cat-tile[aria-pressed="true"] { border: 2px solid var(--accent); }
+
+/* Opening hours and time off */
+.opening { width: auto; min-width: min(100%, 320px); }
+.opening th { text-align: start; font-weight: 600; padding: 6px 16px 6px 0; }
+.opening td { padding: 6px 0; }
+.closures { background: var(--warn-soft); color: var(--ink); border-radius: 12px; padding: 10px 14px; }
+.closures h3 { color: var(--warn); }
+.closures ul { margin: 6px 0 0; padding-inline-start: 18px; }
+.opening-edit .times { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.opening-edit input[type="time"] { width: auto; min-width: 104px; }
+.shift2 { display: inline-flex; align-items: center; gap: 6px; }
+.shift2[hidden] { display: none; }
+.offlist { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.offlist li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+@media (max-width: 600px) {
+  /* Staff menu: one scrollable row instead of running off the screen */
+  .top .tabs { order: 3; width: 100%; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
+  .top .tabs::-webkit-scrollbar { display: none; }
+  .top .tabs a { white-space: nowrap; }
+  /* Opening hours: one block per day, times on their own line */
+  .opening-edit, .opening-edit tbody, .opening-edit tr, .opening-edit td { display: block; }
+  .opening-edit tr { padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .opening-edit td { padding: 4px 0; border: 0; }
+  .opening-edit .times { flex-wrap: wrap; }
+  .opening-edit .shift2 { width: 100%; }
+  .opening-edit input[type="time"] { flex: 1; min-width: 0; }
+}

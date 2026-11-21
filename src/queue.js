@@ -13,8 +13,45 @@ export function getDoctor(db, id) {
   return db.prepare('SELECT * FROM doctors WHERE id = ? AND active = 1').get(id);
 }
 
+// Time ranges as [start, end] in minutes after midnight.
+const toRanges = (rows) => rows.map((r) => [toMinutes(r.start_time), toMinutes(r.end_time)]).filter(([a, b]) => b > a);
+function intersect(a, b) {
+  const out = [];
+  for (const [s1, e1] of a) for (const [s2, e2] of b) { const s = Math.max(s1, s2), e = Math.min(e1, e2); if (e > s) out.push([s, e]); }
+  return out;
+}
+function subtract(ranges, cuts) {
+  let cur = ranges;
+  for (const [cs, ce] of cuts) {
+    const next = [];
+    for (const [s, e] of cur) {
+      if (ce <= s || cs >= e) { next.push([s, e]); continue; }
+      if (cs > s) next.push([s, cs]);
+      if (ce < e) next.push([ce, e]);
+    }
+    cur = next;
+  }
+  return cur;
+}
+
+// Time off that touches this date: for the whole clinic, or (when given) for one doctor or staff member.
+export function timeOffOn(db, clinicId, date, doctorId = null) {
+  return db.prepare('SELECT * FROM time_off WHERE clinic_id = ? AND date_from <= ? AND date_to >= ? AND (doctor_id IS NULL OR doctor_id = ?) ORDER BY start_time')
+    .all(clinicId, date, date, doctorId);
+}
+
+// When a doctor can be booked on a date: their own working hours, inside the clinic's opening hours
+// (when the clinic has set them), minus any time off.
 export function hoursFor(db, doctorId, date) {
-  return db.prepare('SELECT start_time, end_time FROM schedules WHERE doctor_id = ? AND weekday = ? ORDER BY start_time').all(doctorId, weekdayOf(date));
+  const weekday = weekdayOf(date);
+  let ranges = toRanges(db.prepare('SELECT start_time, end_time FROM schedules WHERE doctor_id = ? AND weekday = ?').all(doctorId, weekday));
+  const doc = db.prepare('SELECT d.clinic_id, c.hours_on FROM doctors d JOIN clinics c ON c.id = d.clinic_id WHERE d.id = ?').get(doctorId);
+  if (doc) {
+    if (doc.hours_on) ranges = intersect(ranges, toRanges(db.prepare('SELECT start_time, end_time FROM clinic_hours WHERE clinic_id = ? AND weekday = ?').all(doc.clinic_id, weekday)));
+    const off = timeOffOn(db, doc.clinic_id, date, doctorId).map((o) => (o.start_time ? [toMinutes(o.start_time), toMinutes(o.end_time)] : [0, 24 * 60]));
+    ranges = subtract(ranges, off);
+  }
+  return ranges.sort((a, b) => a[0] - b[0]).map(([a, b]) => ({ start_time: fromMinutes(a), end_time: fromMinutes(b) }));
 }
 
 // The days a patient can choose, with whether the doctor works that day.

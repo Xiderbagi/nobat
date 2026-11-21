@@ -57,6 +57,12 @@ Until WhatsApp or SMS is set up, nothing is actually sent. Messages are printed 
 - **Clinic and salon photos:** each business adds a cover photo, a gallery (up to 12) and an "About" text in **Settings**.
 - Photos are saved in an `uploads` folder next to the database (`/data/uploads` on Render). Include it when you copy backups somewhere else.
 
+## Opening hours, time off and visit length
+
+- **Staff → Hours:** the owner sets the clinic's opening hours (one or two times a day, for example morning and evening). Patients can only book inside them, and they show on the clinic's page.
+- **Block time off:** any staff member can block whole days (holidays, leave) or a few hours (a break or meeting), for the whole clinic or one doctor. Nobody can book that time online. If people already booked in that time, the screen lists them with their phone numbers so staff can call them. Doctors can only block their own time.
+- **Visit length:** in **Settings**, choosing a doctor's specialty fills in the usual visit length (for example 30 minutes for a dentist, 15 for a general doctor). The clinic can change it. Salons and spas set the length per service.
+
 ## Cancelling, lateness and no-shows
 
 - **Customers** see the rules in plain words before they book and on their booking link. They can cancel online until **24 hours** before the visit; after that the page shows a **Call us** button with the clinic's phone number (add it in Settings).

@@ -12,7 +12,7 @@ import {
   dueReminders, freeSlots, getBooking, getBookingByToken, getDoctor, markFollowUpSent, markRebookSent, markReminded, queuePreview,
   salonDay, salonTimes, setStatus, ticketStatus
 } from './queue.js';
-import { checkSecret, displayPhone, hashSecret, isClock, isIsoDate, localParts, normalizePhone, otpCode } from './util.js';
+import { addDays, checkSecret, displayPhone, hashSecret, isClock, isIsoDate, localParts, normalizePhone, otpCode } from './util.js';
 import * as views from './views.js';
 import { adminRouter, ensureAdminFromEnv } from './admin.js';
 import { search, categoriesFor, ratingSummary, reviewPoints } from './directory.js';
@@ -169,8 +169,14 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     if (clinic.status === 'off') return unavailable(res, clinic, lang);
     const staff = db.prepare('SELECT * FROM doctors WHERE clinic_id = ? AND active = 1 ORDER BY name').all(clinic.id);
     const photos = clinicPhotos(db, clinic.id);
-    if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev, canChooseChannel(), reviewsHtml(clinic, lang), ratingSummary(db, clinic.id), photos));
-    res.send(views.clinicPage(clinic, staff, lang, reviewsHtml(clinic, lang), ratingSummary(db, clinic.id), photos));
+    const today = localParts().date;
+    const opening = {
+      hours: clinic.hours_on ? hoursOf(clinic.id) : [],
+      closed: db.prepare('SELECT date_from, date_to, start_time, end_time, reason FROM time_off WHERE clinic_id = ? AND doctor_id IS NULL AND date_to >= ? AND date_from <= ? ORDER BY date_from')
+        .all(clinic.id, today, addDays(today, 13))
+    };
+    if (clinic.kind === 'salon') return res.send(views.salonPage(clinic, staff, activeServices(db, clinic.id), lang, dev, canChooseChannel(), reviewsHtml(clinic, lang), ratingSummary(db, clinic.id), photos, opening));
+    res.send(views.clinicPage(clinic, staff, lang, reviewsHtml(clinic, lang), ratingSummary(db, clinic.id), photos, opening));
   });
 
   app.get('/c/:slug/d/:id', (req, res) => {
@@ -376,6 +382,7 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     res.send(views.settingsPage(req.user, clinic));
   }));
   app.get('/app/patients', ...staffPage((req, res, clinic) => res.send(views.patientsPage(req.user, clinic))));
+  app.get('/app/hours', ...staffPage((req, res, clinic) => res.send(views.hoursPage(req.user, clinic))));
   app.get('/app/reviews', ...staffPage((req, res, clinic) => {
     const reviews = db.prepare(`SELECT r.*, d.name AS doctor FROM reviews r LEFT JOIN doctors d ON d.id = r.doctor_id WHERE r.clinic_id = ? AND r.hidden = 0 ORDER BY r.id DESC LIMIT 200`).all(clinic.id);
     res.send(views.staffReviewsPage(req.user, clinic, ratingSummary(db, clinic.id), reviewPoints(clinic.kind, req.user.lang), reviews));
@@ -553,6 +560,65 @@ export function createApp(db, { baseUrl = process.env.BASE_URL || 'http://localh
     const tags = (Array.isArray(req.body.tags) ? req.body.tags : []).filter(isCategory).slice(0, 8).join(',');
     db.prepare('UPDATE clinics SET name = ?, city = ?, address = ?, phone = ?, lat = ?, lng = ?, tags = ?, listed = ?, about = ? WHERE id = ?')
       .run(f('name', 80), f('city', 40), f('address', 120), f('phone', 20), hasPlace ? lat : null, hasPlace ? lng : null, tags, req.body.listed === false ? 0 : 1, String(req.body.about || '').trim().slice(0, 1500), req.user.clinic_id);
+    res.json({ ok: true });
+  });
+
+  // ---------- Opening hours and time off ----------
+  const hoursOf = (clinicId) => db.prepare('SELECT weekday, start_time, end_time FROM clinic_hours WHERE clinic_id = ? ORDER BY weekday, start_time').all(clinicId);
+  const upcomingOff = (clinicId) => db.prepare(`SELECT t.id, t.doctor_id, t.date_from, t.date_to, t.start_time, t.end_time, t.reason, d.name AS doctor
+    FROM time_off t LEFT JOIN doctors d ON d.id = t.doctor_id WHERE t.clinic_id = ? AND t.date_to >= ? ORDER BY t.date_from, t.start_time`).all(clinicId, localParts().date);
+
+  api.get('/hours', (req, res) => {
+    const clinic = clinicOf(req);
+    res.json({
+      hoursOn: Boolean(clinic.hours_on), hours: hoursOf(clinic.id), timeOff: upcomingOff(clinic.id), today: localParts().date,
+      doctors: db.prepare('SELECT id, name FROM doctors WHERE clinic_id = ? AND active = 1 ORDER BY name').all(clinic.id),
+      canEditHours: req.user.role === 'owner', ownDoctor: req.user.role === 'doctor' ? req.user.doctor_id : null
+    });
+  });
+
+  // The clinic's opening hours: up to two time ranges a day. Customers can book only inside them.
+  api.put('/hours', requireOwner, (req, res) => {
+    const on = req.body.on !== false;
+    const rows = (Array.isArray(req.body.hours) ? req.body.hours : [])
+      .filter((h) => Number.isInteger(h.weekday) && h.weekday >= 0 && h.weekday <= 6 && isClock(h.start_time) && isClock(h.end_time) && h.end_time > h.start_time).slice(0, 14);
+    if (on && !rows.length) return res.status(400).json({ error: 'hoursNeedOne' });
+    tx(db, () => {
+      db.prepare('DELETE FROM clinic_hours WHERE clinic_id = ?').run(req.user.clinic_id);
+      const ins = db.prepare('INSERT INTO clinic_hours (clinic_id, weekday, start_time, end_time) VALUES (?, ?, ?, ?)');
+      for (const h of rows) ins.run(req.user.clinic_id, h.weekday, h.start_time, h.end_time);
+      db.prepare('UPDATE clinics SET hours_on = ? WHERE id = ?').run(on ? 1 : 0, req.user.clinic_id);
+    });
+    res.json({ ok: true });
+  });
+
+  // Block time off: whole days or a few hours, for the whole clinic or one doctor or staff member.
+  // Doctors can only block their own time. Bookings already in that time are returned so staff can call them.
+  api.post('/timeoff', (req, res) => {
+    const b = req.body;
+    const today = localParts().date;
+    let doctorId = b.doctorId ? Number(b.doctorId) : null;
+    if (req.user.role === 'doctor') doctorId = req.user.doctor_id;
+    if (doctorId && !ownDoctor(req, doctorId)) return res.status(400).json({ error: 'errGeneric' });
+    const from = String(b.dateFrom || ''), to = String(b.dateTo || b.dateFrom || '');
+    if (!isIsoDate(from) || !isIsoDate(to) || to < from || to < today || to > addDays(from, 366)) return res.status(400).json({ error: 'offBadDates' });
+    const allDay = b.allDay !== false;
+    if (!allDay && (!isClock(b.startTime) || !isClock(b.endTime) || b.endTime <= b.startTime)) return res.status(400).json({ error: 'offBadTimes' });
+    const st = allDay ? null : b.startTime, et = allDay ? null : b.endTime;
+    db.prepare('INSERT INTO time_off (clinic_id, doctor_id, date_from, date_to, start_time, end_time, reason, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(req.user.clinic_id, doctorId, from, to, st, et, String(b.reason || '').trim().slice(0, 100), req.user.id);
+    const affected = db.prepare(`SELECT b.date, b.time, COALESCE(p.name, b.walkin_name, '') AS name, p.phone, d.name AS doctor
+      FROM bookings b JOIN doctors d ON d.id = b.doctor_id LEFT JOIN patients p ON p.id = b.patient_id
+      WHERE b.clinic_id = ? AND b.status IN ('booked', 'arrived') AND b.date BETWEEN ? AND ? AND (? IS NULL OR b.doctor_id = ?)
+      ORDER BY b.date, b.time`).all(req.user.clinic_id, from, to, doctorId, doctorId)
+      .filter((x) => allDay || (x.time && x.time >= st && x.time < et));
+    res.json({ ok: true, affected: affected.map((x) => ({ ...x, phone: x.phone ? displayPhone(x.phone) : null })) });
+  });
+
+  api.delete('/timeoff/:id', (req, res) => {
+    const row = db.prepare('SELECT * FROM time_off WHERE id = ? AND clinic_id = ?').get(Number(req.params.id), req.user.clinic_id);
+    if (!row || (req.user.role === 'doctor' && row.doctor_id !== req.user.doctor_id)) return res.status(404).json({ error: 'errGeneric' });
+    db.prepare('DELETE FROM time_off WHERE id = ?').run(row.id);
     res.json({ ok: true });
   });
 

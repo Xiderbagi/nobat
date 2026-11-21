@@ -263,6 +263,31 @@ const MIGRATIONS = [
     done INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
+  `,
+  // 8: the clinic's own opening hours (limit every doctor's bookable times) and blocked time off
+  `
+  ALTER TABLE clinics ADD COLUMN hours_on INTEGER NOT NULL DEFAULT 0;
+  CREATE TABLE clinic_hours (
+    id INTEGER PRIMARY KEY,
+    clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+    weekday INTEGER NOT NULL CHECK (weekday BETWEEN 0 AND 6),
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL
+  );
+  CREATE INDEX clinic_hours_clinic ON clinic_hours (clinic_id, weekday);
+  CREATE TABLE time_off (
+    id INTEGER PRIMARY KEY,
+    clinic_id INTEGER NOT NULL REFERENCES clinics(id),
+    doctor_id INTEGER REFERENCES doctors(id),
+    date_from TEXT NOT NULL,
+    date_to TEXT NOT NULL,
+    start_time TEXT,
+    end_time TEXT,
+    reason TEXT NOT NULL DEFAULT '',
+    created_by INTEGER REFERENCES users(id),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX time_off_clinic ON time_off (clinic_id, date_to);
   `
 ];
 

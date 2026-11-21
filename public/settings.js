@@ -79,7 +79,10 @@
       el('div', { class: 'grid2' },
         field(tr('name'), input(p + 'name', d.name, { maxlength: 80 })),
         field(tr('specialty'), input(p + 'spec', d.specialty, { maxlength: 60, placeholder: tr('specialtyPh') })),
-        salon ? null : field(tr('category'), el('select', { id: p + 'cat' }, el('option', { value: '' }, tr('chooseCategory')), S.categories.map((cat) => el('option', { value: cat.key, selected: d.category === cat.key }, cat.name))), tr('categoryHint')),
+        salon ? null : field(tr('category'), el('select', { id: p + 'cat', onchange: (e) => {
+          const m = (S.categories.find((c) => c.key === e.target.value) || {}).minutes;
+          if (m) { v('slot').value = m[0]; v('avg').value = m[1]; }
+        } }, el('option', { value: '' }, tr('chooseCategory')), S.categories.map((cat) => el('option', { value: cat.key, selected: d.category === cat.key }, cat.name))), tr('categoryHint')),
         ...clinicFields,
         field(tr('dailyLimit'), input(p + 'limit', d.daily_limit, { type: 'number', min: 1, max: 500 }))),
       el('div', { class: 'tablewrap' }, el('table', { class: 'sched' }, el('thead', {}, el('tr', {}, el('th', {}, tr('workDay')), el('th', {}, tr('from')), el('th', {}, tr('to')))), el('tbody', {}, rows))),

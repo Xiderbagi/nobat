@@ -211,6 +211,22 @@ export function policyBlock(clinic, lang, { call = true } = {}) {
     ${call && clinic.phone ? `<a class="btn ghost small" href="tel:${esc(clinic.phone.replace(/[^\d+]/g, ''))}">📞 ${esc(t(lang, 'callUs'))} · <bdi dir="ltr">${esc(clinic.phone)}</bdi></a>` : ''}</section>`;
 }
 
+// Opening hours and closures in the next two weeks, on a clinic's or salon's page.
+const WEEK_ORDER = [6, 0, 1, 2, 3, 4, 5]; // the working week in Kurdistan starts on Saturday
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+function openingBlock(lang, opening) {
+  if (!opening || (!opening.hours.length && !opening.closed.length)) return '';
+  const range = (a, b) => `<bdi dir="ltr">${esc(a)}–${esc(b)}</bdi>`;
+  const closed = opening.closed.length ? `<div class="closures"><h3>${esc(t(lang, 'closuresTitle'))}</h3><ul>${opening.closed.map((c) => `<li>
+      <b><bdi dir="ltr">${esc(c.date_from)}${c.date_to !== c.date_from ? ` – ${esc(c.date_to)}` : ''}</bdi></b>
+      ${c.start_time ? range(c.start_time, c.end_time) : esc(t(lang, 'closed'))}${c.reason ? ` · ${esc(c.reason)}` : ''}</li>`).join('')}</ul></div>` : '';
+  const hours = opening.hours.length ? `<table class="opening"><tbody>${WEEK_ORDER.map((wd) => {
+    const day = opening.hours.filter((h) => h.weekday === wd);
+    return `<tr><th>${esc(t(lang, DAY_KEYS[wd]))}</th><td>${day.length ? day.map((h) => range(h.start_time, h.end_time)).join(', ') : `<span class="muted">${esc(t(lang, 'closed'))}</span>`}</td></tr>`;
+  }).join('')}</tbody></table>` : '';
+  return `<section class="card stack"><h2>${esc(t(lang, 'openingTitle'))}</h2>${closed}${hours}</section>`;
+}
+
 // About text and photo gallery a clinic or salon added in Settings.
 function aboutAndGallery(clinic, lang, photos) {
   const about = clinic.about ? `<section class="card stack about"><h2>${esc(t(lang, 'aboutTitle'))}</h2><p>${esc(clinic.about)}</p></section>` : '';
@@ -219,7 +235,7 @@ function aboutAndGallery(clinic, lang, photos) {
   return about + gallery;
 }
 
-export function clinicPage(clinic, doctors, lang, reviews = '', rating = null, photos = null) {
+export function clinicPage(clinic, doctors, lang, reviews = '', rating = null, photos = null, opening = null) {
   const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}`)}
   <main class="wrap stack">
     ${cover(clinic, lang, rating, photos)}
@@ -232,6 +248,7 @@ export function clinicPage(clinic, doctors, lang, reviews = '', rating = null, p
       </a>`).join('') || '<p class="muted">—</p>'}
     </div>
     ${aboutAndGallery(clinic, lang, photos)}
+    ${openingBlock(lang, opening)}
     ${policyBlock(clinic, lang)}
     ${reviews}
     <p class="foot">${esc(t(lang, 'poweredBy'))} · <a href="/policy?lang=${lang}">${esc(t(lang, 'policyLink'))}</a> · <a href="/support?lang=${lang}">${esc(t(lang, 'supportLink'))}</a></p>
@@ -274,7 +291,7 @@ function contactForm(lang, choose) {
     </form>`;
 }
 
-export function salonPage(clinic, staff, services, lang, dev, choose, reviews = '', rating = null, photos = null) {
+export function salonPage(clinic, staff, services, lang, dev, choose, reviews = '', rating = null, photos = null, opening = null) {
   const body = `${publicHeader(clinic, lang, `/c/${clinic.slug}`)}
   <main class="wrap narrow stack">
     ${cover(clinic, lang, rating, photos)}
@@ -296,6 +313,7 @@ export function salonPage(clinic, staff, services, lang, dev, choose, reviews = 
       <div class="summary" id="summary" hidden></div>
     </section>
     ${contactForm(lang, choose)}
+    ${openingBlock(lang, opening)}
     ${policyBlock(clinic, lang)}
     ${reviews}
     <p class="foot">${esc(t(lang, 'poweredBy'))} · <a href="/policy?lang=${lang}">${esc(t(lang, 'policyLink'))}</a> · <a href="/support?lang=${lang}">${esc(t(lang, 'supportLink'))}</a></p>
@@ -343,7 +361,7 @@ export function loginPage(lang) {
 }
 
 function staffHeader(user, L, current) {
-  const tabs = [['/app', L.today], ['/app/patients', L.patients], ['/app/reviews', L.reviews], ['/app/messages', L.messages]];
+  const tabs = [['/app', L.today], ['/app/patients', L.patients], ['/app/hours', L.hoursTab], ['/app/reviews', L.reviews], ['/app/messages', L.messages]];
   if (user.role === 'owner') tabs.push(['/app/settings', L.settings]);
   return `<header class="top"><div class="wrap row">
     <a class="brand" href="/app">${LOGO}<span><b>Nobat</b><small>${esc(user.clinic_name)} · ${esc(user.name)}</small></span></a>
@@ -416,6 +434,10 @@ export function staffReviewsPage(user, clinic, summary, points, reviews) {
       ${reviews.map((r) => `<tr><td class="nowrap" dir="ltr">${esc(r.created_at.slice(0, 10))}</td><td>${esc(r.author)}</td><td>${esc(r.doctor || '')}</td>${points.map((p) => `<td class="num">${'★'.repeat(r[p.key])}</td>`).join('')}<td dir="auto">${esc(r.comment)}</td></tr>`).join('') || `<tr><td colspan="${4 + points.length}" class="muted">${esc(L.noReviewsYet)}</td></tr>`}
     </tbody></table></div></section>
   </main>`);
+}
+
+export function hoursPage(user, clinic) {
+  return staffPage(user, clinic, '/app/hours', 'Hours', () => '<main class="wrap stack" id="hours"></main>', 'hours.js');
 }
 
 export function settingsPage(user, clinic) {
